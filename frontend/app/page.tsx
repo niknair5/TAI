@@ -88,7 +88,7 @@ export default function RoleSelectPage() {
               <div className="mx-auto w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
                 <BookOpen className="w-8 h-8 text-primary" />
               </div>
-              <CardTitle className="text-xl">I'm a Student</CardTitle>
+              <CardTitle className="text-xl">I&apos;m a Student</CardTitle>
               <CardDescription>
                 Get help understanding course materials
               </CardDescription>
@@ -127,7 +127,7 @@ export default function RoleSelectPage() {
               <div className="mx-auto w-16 h-16 rounded-xl bg-accent/10 flex items-center justify-center mb-2">
                 <Users className="w-8 h-8 text-accent" />
               </div>
-              <CardTitle className="text-xl">I'm a Teacher</CardTitle>
+              <CardTitle className="text-xl">I&apos;m a Teacher</CardTitle>
               <CardDescription>
                 Set up and manage your courses
               </CardDescription>

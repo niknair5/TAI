@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -37,24 +37,7 @@ export default function TeacherDashboardPage() {
   // Activity state
   const [activity, setActivity] = useState<CourseActivity | null>(null);
 
-  useEffect(() => {
-    const role = getStoredRole();
-    const userId = getStoredUserId();
-
-    if (!role || !userId) {
-      router.push("/");
-      return;
-    }
-
-    if (role !== "teacher") {
-      router.push("/student");
-      return;
-    }
-
-    loadData();
-  }, [courseId, router]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [courseData, filesData, guardrailsData, activityData] = await Promise.all([
         getCourse(courseId),
@@ -77,7 +60,24 @@ export default function TeacherDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [courseId, toast]);
+
+  useEffect(() => {
+    const role = getStoredRole();
+    const userId = getStoredUserId();
+
+    if (!role || !userId) {
+      router.push("/");
+      return;
+    }
+
+    if (role !== "teacher") {
+      router.push("/student");
+      return;
+    }
+
+    loadData();
+  }, [loadData, router]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
