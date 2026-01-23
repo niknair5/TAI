@@ -11,12 +11,7 @@ class Settings(BaseSettings):
     openai_api_key: str
     
     # App settings
-    cors_origins: list[str] = [
-        "http://localhost:3000", 
-        "http://localhost:3001",
-        "https://ta-i.vercel.app",
-        "https://ta-i-niknair5s-projects.vercel.app",
-    ]
+    cors_origins: list[str] = ["*"]
     embedding_model: str = "text-embedding-3-small"
     chat_model: str = "gpt-4o-mini"
     chunk_size: int = 400  # target tokens per chunk
