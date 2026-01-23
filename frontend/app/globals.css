@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary: #0B1F3B (navy) */
+    --primary: 215 69% 14%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Accent: #D4A017 (gold) */
+    --accent: 44 80% 46%;
+    --accent-foreground: 222 47% 11%;
+    
+    /* Background: #F6F7FB */
+    --background: 228 33% 97%;
+    
+    /* Surface: #FFFFFF */
+    --card: 0 0% 100%;
+    --popover: 0 0% 100%;
+    
+    /* Text: #0F172A */
+    --foreground: 222 47% 11%;
+    --card-foreground: 222 47% 11%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Muted: #475569 */
+    --muted: 228 20% 94%;
+    --muted-foreground: 215 19% 35%;
+    
+    /* Border: #E2E8F0 */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    
+    /* Secondary - navy tinted light */
+    --secondary: 215 25% 92%;
+    --secondary-foreground: 215 69% 14%;
+    
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Ring uses accent gold for focus states */
+    --ring: 44 80% 46%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    /* Dark mode: navy-based theme */
+    --primary: 44 80% 46%;
+    --primary-foreground: 215 69% 14%;
+    
+    --accent: 44 70% 55%;
+    --accent-foreground: 222 47% 11%;
+    
+    --background: 215 69% 8%;
+    
+    --card: 215 55% 12%;
+    --popover: 215 55% 12%;
+    
+    --foreground: 228 33% 97%;
+    --card-foreground: 228 33% 97%;
+    --popover-foreground: 228 33% 97%;
+    
+    --muted: 215 40% 18%;
+    --muted-foreground: 215 15% 60%;
+    
+    --border: 215 35% 22%;
+    --input: 215 35% 22%;
+    
+    --secondary: 215 40% 18%;
+    --secondary-foreground: 228 33% 97%;
+    
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --ring: 44 80% 46%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Background utility */
+.gradient-bg {
+  background: hsl(var(--background));
+}
+
+/* Typing animation for loading */
+@keyframes typing-dot {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.typing-dot {
+  animation: typing-dot 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
