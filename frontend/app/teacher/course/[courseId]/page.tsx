@@ -181,7 +181,9 @@ export default function TeacherDashboardPage() {
               <div>
                 <h1 className="font-semibold text-sm leading-none">{course?.name}</h1>
                 <button
+                  type="button"
                   onClick={copyClassCode}
+                  aria-label="Copy class code"
                   className="text-xs text-muted-foreground font-mono hover:text-foreground flex items-center gap-1"
                 >
                   {course?.class_code}
@@ -194,8 +196,8 @@ export default function TeacherDashboardPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-muted/50 p-1 rounded-lg w-fit">
+        {/* Tabs — role="tablist" + role="tab" for keyboard/screen-reader a11y */}
+        <div role="tablist" className="flex gap-1 mb-6 bg-muted/50 p-1 rounded-lg w-fit">
           {[
             { id: "files", label: "Files", icon: FileText },
             { id: "guardrails", label: "Guardrails", icon: Settings },
@@ -203,6 +205,9 @@ export default function TeacherDashboardPage() {
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === id}
               onClick={() => setActiveTab(id as Tab)}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
@@ -279,6 +284,7 @@ export default function TeacherDashboardPage() {
                           </div>
                         </div>
                         <Button
+                          type="button"
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteFile(file.id, file.filename)}
@@ -317,13 +323,18 @@ export default function TeacherDashboardPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Allow Final Answer */}
+                {/* Allow Final Answer — role="switch" so keyboard users
+                    can toggle with Enter/Space and screen readers announce state */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-sm">Allow Final Answers</p>
                     <p className="text-xs text-muted-foreground">Let TA-I give complete solutions</p>
                   </div>
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={guardrails.allow_final_answer}
+                    aria-label="Allow final answers"
                     onClick={() => handleGuardrailChange("allow_final_answer", !guardrails.allow_final_answer)}
                     className={cn(
                       "w-12 h-6 rounded-full transition-colors relative",
@@ -346,6 +357,10 @@ export default function TeacherDashboardPage() {
                     <p className="text-xs text-muted-foreground">Let TA-I include code in responses</p>
                   </div>
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={guardrails.allow_code}
+                    aria-label="Allow code in responses"
                     onClick={() => handleGuardrailChange("allow_code", !guardrails.allow_code)}
                     className={cn(
                       "w-12 h-6 rounded-full transition-colors relative",
@@ -386,7 +401,8 @@ export default function TeacherDashboardPage() {
                   </div>
                 </div>
 
-                {/* Assessment Mode */}
+                {/* Assessment Mode — aria-pressed communicates selected state to
+                    keyboard and screen-reader users */}
                 <div>
                   <p className="font-medium text-sm mb-2">Assessment Mode</p>
                   <p className="text-xs text-muted-foreground mb-3">Current student context</p>
@@ -394,6 +410,8 @@ export default function TeacherDashboardPage() {
                     {["homework", "quiz", "exam", "practice", "unknown"].map((mode) => (
                       <button
                         key={mode}
+                        type="button"
+                        aria-pressed={guardrails.assessment_mode === mode}
                         onClick={() => handleGuardrailChange("assessment_mode", mode)}
                         className={cn(
                           "px-3 py-2 text-xs rounded-md capitalize transition-colors",
@@ -416,6 +434,8 @@ export default function TeacherDashboardPage() {
                     {["elementary", "middle", "high", "university"].map((level) => (
                       <button
                         key={level}
+                        type="button"
+                        aria-pressed={guardrails.course_level === level}
                         onClick={() => handleGuardrailChange("course_level", level)}
                         className={cn(
                           "px-3 py-2 text-xs rounded-md capitalize transition-colors",

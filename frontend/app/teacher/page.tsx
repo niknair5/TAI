@@ -143,7 +143,8 @@ export default function TeacherHomePage() {
               <p className="text-xs text-muted-foreground">Teacher</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSwitchRole}>
+          {/* type="button" — not a form submit; ensures correct keyboard behavior */}
+          <Button type="button" variant="ghost" size="sm" onClick={handleSwitchRole}>
             <LogOut className="w-4 h-4 mr-2" />
             Switch Role
           </Button>
@@ -157,11 +158,11 @@ export default function TeacherHomePage() {
             <p className="text-muted-foreground">Manage your courses and view student activity</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setShowJoinForm(!showJoinForm); setShowCreateForm(false); }}>
+            <Button type="button" variant="outline" onClick={() => { setShowJoinForm(!showJoinForm); setShowCreateForm(false); }}>
               <Users className="w-4 h-4 mr-2" />
               Join Existing
             </Button>
-            <Button onClick={() => { setShowCreateForm(!showCreateForm); setShowJoinForm(false); }}>
+            <Button type="button" onClick={() => { setShowCreateForm(!showCreateForm); setShowJoinForm(false); }}>
               <Plus className="w-4 h-4 mr-2" />
               Create Course
             </Button>
@@ -248,7 +249,7 @@ export default function TeacherHomePage() {
               <p className="text-muted-foreground text-sm mb-4">
                 Create your first course to get started
               </p>
-              <Button onClick={() => setShowCreateForm(true)}>
+              <Button type="button" onClick={() => setShowCreateForm(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Your First Course
               </Button>

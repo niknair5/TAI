@@ -106,7 +106,8 @@ export default function StudentHomePage() {
               <p className="text-xs text-muted-foreground">Student</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSwitchRole}>
+          {/* type="button" — not a form submit; ensures correct keyboard behavior */}
+          <Button type="button" variant="ghost" size="sm" onClick={handleSwitchRole}>
             <LogOut className="w-4 h-4 mr-2" />
             Switch Role
           </Button>
@@ -119,7 +120,7 @@ export default function StudentHomePage() {
             <h2 className="text-2xl font-bold">My Classes</h2>
             <p className="text-muted-foreground">Select a class to start chatting</p>
           </div>
-          <Button onClick={() => setShowJoinForm(!showJoinForm)}>
+          <Button type="button" onClick={() => setShowJoinForm(!showJoinForm)}>
             <Plus className="w-4 h-4 mr-2" />
             Join Class
           </Button>
@@ -163,7 +164,7 @@ export default function StudentHomePage() {
               <p className="text-muted-foreground text-sm mb-4">
                 Join a class using the code from your instructor
               </p>
-              <Button variant="outline" onClick={() => setShowJoinForm(true)}>
+              <Button type="button" variant="outline" onClick={() => setShowJoinForm(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Join Your First Class
               </Button>

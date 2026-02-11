@@ -75,7 +75,9 @@ export default function RoleSelectPage() {
           </div>
         </div>
 
-        {/* Role selection */}
+        {/* Role selection
+            Keyboard a11y: Card divs are not focusable, so the <Button> must
+            carry its own onClick + type="button" so Tab → Enter/Space works. */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* Student Card */}
           <Card 
@@ -100,9 +102,14 @@ export default function RoleSelectPage() {
                 <li>Learn from your uploaded materials</li>
               </ul>
               <Button 
+                type="button"
                 className="w-full mt-4" 
                 disabled={selectedRole !== null}
                 variant={selectedRole === "student" ? "default" : "outline"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!selectedRole) handleRoleSelect("student");
+                }}
               >
                 {selectedRole === "student" ? (
                   <>
@@ -139,9 +146,14 @@ export default function RoleSelectPage() {
                 <li>View student activity logs</li>
               </ul>
               <Button 
+                type="button"
                 className="w-full mt-4" 
                 disabled={selectedRole !== null}
                 variant={selectedRole === "teacher" ? "default" : "outline"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!selectedRole) handleRoleSelect("teacher");
+                }}
               >
                 {selectedRole === "teacher" ? (
                   <>
