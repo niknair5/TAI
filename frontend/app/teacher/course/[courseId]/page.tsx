@@ -184,7 +184,7 @@ export default function TeacherDashboardPage() {
                   type="button"
                   onClick={copyClassCode}
                   aria-label="Copy class code"
-                  className="text-xs text-muted-foreground font-mono hover:text-foreground flex items-center gap-1"
+                  className="text-xs text-muted-foreground font-mono hover:text-foreground flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background rounded-sm"
                 >
                   {course?.class_code}
                   {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -210,7 +210,7 @@ export default function TeacherDashboardPage() {
               aria-selected={activeTab === id}
               onClick={() => setActiveTab(id as Tab)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
+                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background",
                 activeTab === id
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -337,7 +337,7 @@ export default function TeacherDashboardPage() {
                     aria-label="Allow final answers"
                     onClick={() => handleGuardrailChange("allow_final_answer", !guardrails.allow_final_answer)}
                     className={cn(
-                      "w-12 h-6 rounded-full transition-colors relative",
+                      "w-12 h-6 rounded-full transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background",
                       guardrails.allow_final_answer ? "bg-primary" : "bg-muted"
                     )}
                   >
@@ -363,7 +363,7 @@ export default function TeacherDashboardPage() {
                     aria-label="Allow code in responses"
                     onClick={() => handleGuardrailChange("allow_code", !guardrails.allow_code)}
                     className={cn(
-                      "w-12 h-6 rounded-full transition-colors relative",
+                      "w-12 h-6 rounded-full transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background",
                       guardrails.allow_code ? "bg-primary" : "bg-muted"
                     )}
                   >
@@ -414,7 +414,7 @@ export default function TeacherDashboardPage() {
                         aria-pressed={guardrails.assessment_mode === mode}
                         onClick={() => handleGuardrailChange("assessment_mode", mode)}
                         className={cn(
-                          "px-3 py-2 text-xs rounded-md capitalize transition-colors",
+                          "px-3 py-2 text-xs rounded-md capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background",
                           guardrails.assessment_mode === mode
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted hover:bg-muted/80"
@@ -438,7 +438,7 @@ export default function TeacherDashboardPage() {
                         aria-pressed={guardrails.course_level === level}
                         onClick={() => handleGuardrailChange("course_level", level)}
                         className={cn(
-                          "px-3 py-2 text-xs rounded-md capitalize transition-colors",
+                          "px-3 py-2 text-xs rounded-md capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background",
                           guardrails.course_level === level
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted hover:bg-muted/80"

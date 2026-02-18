@@ -63,7 +63,7 @@
     --popover-foreground: 228 33% 97%;
     
     --muted: 215 40% 18%;
-    --muted-foreground: 215 15% 60%;
+    --muted-foreground: 215 15% 65%;
     
     --border: 215 35% 22%;
     --input: 215 35% 22%;
@@ -85,6 +85,18 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Global focus-visible ring for custom interactive elements.
+     shadcn components override this via utility-layer focus-visible:outline-none
+     and use their own ring approach instead. */
+  a:focus-visible,
+  button:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="switch"]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: var(--radius);
   }
 }
 

@@ -70,7 +70,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               {message.sources.map((source, index) => (
                 <li
                   key={index}
-                  className="text-xs text-muted-foreground/80 font-mono"
+                  className="text-xs text-muted-foreground font-mono"
                 >
                   {source.filename} (chunk {source.chunk_index})
                 </li>

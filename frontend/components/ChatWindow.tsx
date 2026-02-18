@@ -95,9 +95,9 @@ export function ChatWindow({
               </div>
               <div className="bg-card rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-muted-foreground/50 rounded-full typing-dot" />
-                  <span className="w-2 h-2 bg-muted-foreground/50 rounded-full typing-dot" />
-                  <span className="w-2 h-2 bg-muted-foreground/50 rounded-full typing-dot" />
+                  <span className="w-2 h-2 bg-muted-foreground/70 rounded-full typing-dot" />
+                  <span className="w-2 h-2 bg-muted-foreground/70 rounded-full typing-dot" />
+                  <span className="w-2 h-2 bg-muted-foreground/70 rounded-full typing-dot" />
                 </div>
               </div>
             </div>

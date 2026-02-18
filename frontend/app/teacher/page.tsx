@@ -258,7 +258,7 @@ export default function TeacherHomePage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {courses.map((course) => (
-              <Link key={course.id} href={`/teacher/course/${course.id}`}>
+              <Link key={course.id} href={`/teacher/course/${course.id}`} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background rounded-lg">
                 <Card className="h-full hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group">
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
