@@ -57,7 +57,7 @@ export function HintControls({
 
       {/* Hint Level Indicator */}
       <div className="ml-auto flex items-center gap-1.5">
-        <span className="text-xs text-muted-foreground">Level</span>
+        <span className="text-xs text-ink/35 font-mono">Level</span>
         <div className="flex gap-0.5">
           {[0, 1, 2, 3].map((level) => (
             <div
@@ -65,8 +65,8 @@ export function HintControls({
               className={cn(
                 "w-2 h-2 rounded-full transition-colors",
                 level <= currentHintLevel
-                  ? "bg-primary"
-                  : "bg-muted"
+                  ? "bg-tai-accent"
+                  : "bg-ink/10"
               )}
             />
           ))}

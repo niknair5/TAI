@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraduationCap, Plus, MessageSquare, Loader2, LogOut, ArrowRight } from "lucide-react";
+import { Plus, MessageSquare, Loader2, LogOut, ArrowRight } from "lucide-react";
 import { getStoredRole, getStoredUserId, clearStoredUser } from "@/lib/utils";
 import { getUserCourses, joinCourse, Course } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -86,41 +86,38 @@ export default function StudentHomePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-paper flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-tai-blue" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen gradient-bg">
+    <div className="min-h-screen bg-paper">
       {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+      <header className="sticky top-0 z-10 border-b border-black/10 bg-paper/90 backdrop-blur-md">
+        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <GraduationCap className="w-4 h-4 text-white" />
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-tai-accent inline-block" />
+              <span className="font-mono font-bold text-sm tracking-widest text-tai-blue">TA-I</span>
             </div>
-            <div>
-              <h1 className="font-semibold text-sm leading-none">TA-I</h1>
-              <p className="text-xs text-muted-foreground">Student</p>
-            </div>
+            <span className="text-xs text-ink/35 font-mono border-l border-black/10 pl-3">Student</span>
           </div>
-          {/* type="button" — not a form submit; ensures correct keyboard behavior */}
-          <Button type="button" variant="ghost" size="sm" onClick={handleSwitchRole}>
+          <Button type="button" variant="ghost" size="sm" onClick={handleSwitchRole} className="text-ink/50 hover:text-ink">
             <LogOut className="w-4 h-4 mr-2" />
             Switch Role
           </Button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+      <main className="max-w-4xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold">My Classes</h2>
-            <p className="text-muted-foreground">Select a class to start chatting</p>
+            <h2 className="font-serif text-3xl text-tai-blue">My Classes</h2>
+            <p className="text-ink/45 text-sm mt-1">Select a class to start chatting</p>
           </div>
-          <Button type="button" onClick={() => setShowJoinForm(!showJoinForm)}>
+          <Button type="button" variant="accent" onClick={() => setShowJoinForm(!showJoinForm)}>
             <Plus className="w-4 h-4 mr-2" />
             Join Class
           </Button>
@@ -157,11 +154,13 @@ export default function StudentHomePage() {
 
         {/* Course List */}
         {courses.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <MessageSquare className="w-12 h-12 text-muted-foreground/50 mb-4" />
-              <h3 className="font-medium text-lg mb-1">No classes yet</h3>
-              <p className="text-muted-foreground text-sm mb-4">
+          <Card className="border-dashed border-2 border-tai-blue/10">
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <div className="w-14 h-14 rounded-2xl bg-tai-blue-light flex items-center justify-center mb-4">
+                <MessageSquare className="w-7 h-7 text-tai-blue/40" />
+              </div>
+              <h3 className="font-serif text-xl text-tai-blue mb-2">No classes yet</h3>
+              <p className="text-ink/40 text-sm mb-6">
                 Join a class using the code from your instructor
               </p>
               <Button type="button" variant="outline" onClick={() => setShowJoinForm(true)}>
@@ -173,23 +172,23 @@ export default function StudentHomePage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {courses.map((course) => (
-              <Link key={course.id} href={`/student/chat/${course.id}`} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background rounded-lg">
-                <Card className="h-full hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group">
+              <Link key={course.id} href={`/student/chat/${course.id}`} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tai-blue/30 focus-visible:ring-offset-2 ring-offset-paper rounded-xl">
+                <Card className="h-full hover:shadow-md hover:border-tai-blue/20 transition-all cursor-pointer group">
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-lg group-hover:text-primary transition-colors">
+                        <CardTitle className="text-lg group-hover:text-tai-accent transition-colors">
                           {course.name}
                         </CardTitle>
                         <CardDescription className="font-mono">
                           {course.class_code}
                         </CardDescription>
                       </div>
-                      <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <ArrowRight className="w-5 h-5 text-ink/20 group-hover:text-tai-accent transition-colors" />
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-ink/40">
                       Click to start chatting
                     </p>
                   </CardContent>

@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { ChatWindow } from "@/components/ChatWindow";
 import { getCourse, createSession, getSessionMessages, sendMessage, Course, ChatMessage, ChatResponse } from "@/lib/api";
 import { getStoredStudentId } from "@/lib/utils";
-import { GraduationCap, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -21,22 +21,16 @@ export default function ChatPage() {
   const [currentHintLevel, setCurrentHintLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize session
   useEffect(() => {
     async function init() {
       try {
-        // Get course info
         const courseData = await getCourse(courseId);
         setCourse(courseData);
         
-        // Get or create student ID
         const studentId = getStoredStudentId();
-        
-        // Create a new session
         const session = await createSession(courseId, studentId);
         setSessionId(session.id);
         
-        // Load existing messages (should be empty for new session)
         const existingMessages = await getSessionMessages(session.id);
         setMessages(existingMessages);
       } catch (err) {
@@ -56,7 +50,6 @@ export default function ChatPage() {
     setIsSending(true);
     setError(null);
     
-    // Optimistically add user message
     const tempUserMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       session_id: sessionId,
@@ -74,7 +67,6 @@ export default function ChatPage() {
         request_hint_increase: requestHintIncrease,
       });
       
-      // Replace temp message and add assistant response
       setMessages(prev => {
         const filtered = prev.filter(m => m.id !== tempUserMessage.id);
         return [...filtered, 
@@ -85,7 +77,6 @@ export default function ChatPage() {
       
       setCurrentHintLevel(response.hint_level);
     } catch (err) {
-      // Remove optimistic message on error
       setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id));
       setError("Failed to send message. Please try again.");
       console.error(err);
@@ -96,12 +87,12 @@ export default function ChatPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center">
+      <div className="min-h-screen bg-paper flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center animate-pulse">
-            <GraduationCap className="w-6 h-6 text-primary" />
+          <div className="w-12 h-12 rounded-2xl bg-tai-blue-light flex items-center justify-center animate-pulse">
+            <span className="font-mono text-sm font-bold text-tai-blue">TA</span>
           </div>
-          <p className="text-muted-foreground">Loading course...</p>
+          <p className="text-ink/45 text-sm">Loading course...</p>
         </div>
       </div>
     );
@@ -109,9 +100,9 @@ export default function ChatPage() {
 
   if (error && !course) {
     return (
-      <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+      <div className="min-h-screen bg-paper flex items-center justify-center p-4">
         <div className="text-center space-y-4">
-          <p className="text-destructive">{error}</p>
+          <p className="text-red-600">{error}</p>
           <Button asChild variant="outline">
             <Link href="/">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -124,29 +115,29 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen gradient-bg flex flex-col">
+    <div className="min-h-screen bg-paper flex flex-col">
       {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+      <header className="sticky top-0 z-10 border-b border-black/10 bg-paper/90 backdrop-blur-md">
+        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild className="shrink-0">
               <Link href="/">
                 <ArrowLeft className="w-4 h-4" />
               </Link>
             </Button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <GraduationCap className="w-4 h-4 text-white" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-tai-blue flex items-center justify-center">
+                <span className="font-mono text-xs font-bold text-white">TA</span>
               </div>
               <div>
-                <h1 className="font-semibold text-sm leading-none">{course?.name}</h1>
-                <p className="text-xs text-muted-foreground font-mono">{course?.class_code}</p>
+                <h1 className="font-medium text-sm leading-none text-tai-blue">{course?.name}</h1>
+                <p className="text-xs text-ink/35 font-mono mt-0.5">{course?.class_code}</p>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              Hint Level: <span className="font-mono text-foreground">{currentHintLevel}/3</span>
+            <span className="text-xs text-ink/40">
+              Hint Level: <span className="font-mono text-tai-blue font-bold">{currentHintLevel}/3</span>
             </span>
           </div>
         </div>

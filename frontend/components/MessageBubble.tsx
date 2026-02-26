@@ -19,18 +19,18 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         className={cn(
           "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
           isUser 
-            ? "bg-secondary" 
+            ? "bg-tai-blue-light" 
             : isRefusal 
-              ? "bg-amber-500/10" 
-              : "bg-primary/10"
+              ? "bg-amber-50" 
+              : "bg-tai-accent/10"
         )}
       >
         {isUser ? (
-          <User className="w-4 h-4 text-secondary-foreground" />
+          <User className="w-4 h-4 text-tai-blue" />
         ) : isRefusal ? (
           <AlertCircle className="w-4 h-4 text-amber-500" />
         ) : (
-          <span className="text-xs font-bold text-primary">TA</span>
+          <span className="text-xs font-bold text-tai-accent font-mono">TA</span>
         )}
       </div>
 
@@ -39,21 +39,27 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         className={cn(
           "max-w-[80%] rounded-2xl px-4 py-3 shadow-sm",
           isUser
-            ? "bg-primary text-primary-foreground rounded-tr-md"
+            ? "bg-tai-blue text-white rounded-tr-md"
             : isRefusal
-              ? "bg-amber-500/10 border border-amber-500/20 rounded-tl-md"
-              : "bg-card rounded-tl-md"
+              ? "bg-amber-50 border border-amber-200 rounded-tl-md"
+              : "bg-white border border-tai-blue/[0.07] rounded-tl-md"
         )}
       >
         {/* Main content */}
-        <div className="text-sm whitespace-pre-wrap leading-relaxed">
+        <div className={cn(
+          "text-sm whitespace-pre-wrap leading-relaxed",
+          isUser ? "text-white" : "text-ink/80"
+        )}>
           {formatMessageContent(message.content)}
         </div>
 
         {/* Hint level indicator */}
         {!isUser && message.hint_level !== null && message.hint_level !== undefined && (
-          <div className="mt-2 pt-2 border-t border-current/10">
-            <span className="text-xs text-muted-foreground">
+          <div className={cn(
+            "mt-2 pt-2 border-t",
+            isRefusal ? "border-amber-200" : "border-tai-blue/[0.07]"
+          )}>
+            <span className="text-xs text-ink/35 font-mono">
               Hint Level: {message.hint_level}
             </span>
           </div>
@@ -61,8 +67,11 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         {/* Sources */}
         {!isUser && message.sources && message.sources.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-current/10">
-            <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+          <div className={cn(
+            "mt-3 pt-3 border-t",
+            isRefusal ? "border-amber-200" : "border-tai-blue/[0.07]"
+          )}>
+            <p className="text-xs font-medium text-ink/40 mb-1.5 flex items-center gap-1">
               <FileText className="w-3 h-3" />
               Sources
             </p>
@@ -70,7 +79,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               {message.sources.map((source, index) => (
                 <li
                   key={index}
-                  className="text-xs text-muted-foreground font-mono"
+                  className="text-xs text-ink/35 font-mono"
                 >
                   {source.filename} (chunk {source.chunk_index})
                 </li>
@@ -84,7 +93,6 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 }
 
 function formatMessageContent(content: string): React.ReactNode {
-  // Simple formatting: handle **bold** and `code`
   const parts = content.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
   
   return parts.map((part, index) => {
@@ -95,7 +103,7 @@ function formatMessageContent(content: string): React.ReactNode {
       return (
         <code
           key={index}
-          className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono"
+          className="px-1.5 py-0.5 bg-tai-blue-light rounded text-xs font-mono text-tai-blue"
         >
           {part.slice(1, -1)}
         </code>

@@ -1,7 +1,6 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: ["class"],
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -43,6 +42,19 @@ const config: Config = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        // TAI Cover custom colors
+        ink: "#0D1117",
+        paper: "#F7F4EE",
+        cream: "#EDE8DF",
+        "tai-blue": {
+          DEFAULT: "#1A3A6B",
+          mid: "#2A5298",
+          light: "#EBF1FA",
+        },
+        "tai-accent": {
+          DEFAULT: "#E8601C",
+          soft: "#F9DDD0",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -50,8 +62,9 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)"],
-        mono: ["var(--font-geist-mono)"],
+        serif: ["var(--font-dm-serif)", "Georgia", "serif"],
+        sans: ["var(--font-dm-sans)", "sans-serif"],
+        mono: ["var(--font-space-mono)", "monospace"],
       },
     },
   },

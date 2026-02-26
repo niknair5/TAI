@@ -4,81 +4,63 @@
 
 @layer base {
   :root {
-    /* Primary: #0B1F3B (navy) */
-    --primary: 215 69% 14%;
-    --primary-foreground: 0 0% 100%;
-    
-    /* Accent: #D4A017 (gold) */
-    --accent: 44 80% 46%;
-    --accent-foreground: 222 47% 11%;
-    
-    /* Background: #F6F7FB */
-    --background: 228 33% 97%;
-    
-    /* Surface: #FFFFFF */
+    /* TA-I Cover Design System */
+    /* Ink / Dark text: #0D1117 */
+    --ink: #0D1117;
+    /* Paper / Background: #F7F4EE */
+    --paper: #F7F4EE;
+    /* Cream: #EDE8DF */
+    --cream: #EDE8DF;
+    /* Blue (primary brand): #1A3A6B */
+    --blue: #1A3A6B;
+    /* Blue mid: #2A5298 */
+    --blue-mid: #2A5298;
+    /* Blue light: #EBF1FA */
+    --blue-light: #EBF1FA;
+    /* Accent (orange): #E8601C */
+    --accent-orange: #E8601C;
+    /* Accent soft: #F9DDD0 */
+    --accent-soft: #F9DDD0;
+    /* Rule: subtle border */
+    --rule: rgba(13,17,23,0.1);
+
+    /* Tailwind / shadcn variable mapping */
+    --background: 38 33% 95%;       /* #F7F4EE */
+    --foreground: 215 40% 7%;       /* #0D1117 */
+
     --card: 0 0% 100%;
+    --card-foreground: 215 40% 7%;
+
     --popover: 0 0% 100%;
-    
-    /* Text: #0F172A */
-    --foreground: 222 47% 11%;
-    --card-foreground: 222 47% 11%;
-    --popover-foreground: 222 47% 11%;
-    
-    /* Muted: #475569 */
-    --muted: 228 20% 94%;
-    --muted-foreground: 215 19% 35%;
-    
-    /* Border: #E2E8F0 */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    
-    /* Secondary - navy tinted light */
-    --secondary: 215 25% 92%;
-    --secondary-foreground: 215 69% 14%;
-    
-    /* Destructive */
+    --popover-foreground: 215 40% 7%;
+
+    --primary: 215 60% 26%;         /* #1A3A6B */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 38 20% 90%;        /* cream-ish */
+    --secondary-foreground: 215 60% 26%;
+
+    --muted: 38 20% 90%;            /* #EDE8DF-ish */
+    --muted-foreground: 215 15% 40%;
+
+    --accent: 19 82% 51%;           /* #E8601C */
+    --accent-foreground: 0 0% 100%;
+
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    
-    /* Ring uses accent gold for focus states */
-    --ring: 44 80% 46%;
-    --radius: 0.625rem;
-  }
 
-  .dark {
-    /* Dark mode: navy-based theme */
-    --primary: 44 80% 46%;
-    --primary-foreground: 215 69% 14%;
-    
-    --accent: 44 70% 55%;
-    --accent-foreground: 222 47% 11%;
-    
-    --background: 215 69% 8%;
-    
-    --card: 215 55% 12%;
-    --popover: 215 55% 12%;
-    
-    --foreground: 228 33% 97%;
-    --card-foreground: 228 33% 97%;
-    --popover-foreground: 228 33% 97%;
-    
-    --muted: 215 40% 18%;
-    --muted-foreground: 215 15% 65%;
-    
-    --border: 215 35% 22%;
-    --input: 215 35% 22%;
-    
-    --secondary: 215 40% 18%;
-    --secondary-foreground: 228 33% 97%;
-    
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    
-    --ring: 44 80% 46%;
+    --border: 38 15% 85%;
+    --input: 38 15% 85%;
+    --ring: 215 60% 26%;
+
+    --radius: 0.5rem;
   }
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   * {
     @apply border-border;
   }
@@ -87,9 +69,7 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Global focus-visible ring for custom interactive elements.
-     shadcn components override this via utility-layer focus-visible:outline-none
-     and use their own ring approach instead. */
+  /* Global focus-visible ring */
   a:focus-visible,
   button:focus-visible,
   [role="tab"]:focus-visible,
@@ -119,9 +99,19 @@
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
-/* Background utility */
-.gradient-bg {
-  background: hsl(var(--background));
+/* ── Animations ── */
+@keyframes rise {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.93) translateY(5px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes pulse-dot {
+  0%,100% { box-shadow: 0 0 0 3px rgba(76,175,80,0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(76,175,80,0.08); }
 }
 
 /* Typing animation for loading */
@@ -146,4 +136,47 @@
 
 .typing-dot:nth-child(3) {
   animation-delay: 0.4s;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  background: rgba(247,244,238,0.85);
+  backdrop-filter: blur(6px);
+}
+
+/* ── Hero-specific styles ── */
+.hero-grid-bg {
+  background-image:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* ── Utility classes ── */
+.gradient-bg {
+  background: hsl(var(--background));
+}
+
+/* Animation utility classes */
+.animate-rise {
+  opacity: 0;
+  transform: translateY(28px);
+  animation: rise 0.9s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+
+.animate-rise-delay-1 {
+  animation-delay: 0.15s;
+}
+
+.animate-rise-delay-2 {
+  animation-delay: 0.4s;
+}
+
+.animate-pop-in {
+  opacity: 0;
+  animation: popIn 0.35s ease forwards;
+}
+
+.status-dot-pulse {
+  animation: pulse-dot 2s ease-in-out infinite;
 }

@@ -28,14 +28,12 @@ export function ChatWindow({
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -56,11 +54,9 @@ export function ChatWindow({
     };
     
     if (inputValue.trim()) {
-      // If there's existing input, prepend the hint request
       onSendMessage(prefixes[type] + inputValue.trim(), type === "more");
       setInputValue("");
     } else if (messages.length > 0) {
-      // If no input but there's message history, request another hint
       onSendMessage(prefixes[type] + "I'm still working on the previous question.", type === "more");
     }
   };
@@ -72,11 +68,11 @@ export function ChatWindow({
         <div className="py-6 space-y-4 max-w-3xl mx-auto">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <MessageSquare className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 rounded-2xl bg-tai-blue-light flex items-center justify-center mb-4">
+                <MessageSquare className="w-8 h-8 text-tai-blue/40" />
               </div>
-              <h2 className="text-lg font-medium mb-2">Start a conversation</h2>
-              <p className="text-muted-foreground text-sm max-w-md">
+              <h2 className="font-serif text-xl text-tai-blue mb-2">Start a conversation</h2>
+              <p className="text-ink/40 text-sm max-w-md">
                 Ask me about your course materials. I can explain concepts, 
                 give hints on problems, and help you understand the material better.
               </p>
@@ -90,14 +86,14 @@ export function ChatWindow({
           {/* Typing indicator */}
           {isSending && (
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-primary">TA</span>
+              <div className="w-8 h-8 rounded-full bg-tai-accent/10 flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-tai-accent font-mono">TA</span>
               </div>
-              <div className="bg-card rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
+              <div className="bg-white rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-tai-blue/[0.07]">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-muted-foreground/70 rounded-full typing-dot" />
-                  <span className="w-2 h-2 bg-muted-foreground/70 rounded-full typing-dot" />
-                  <span className="w-2 h-2 bg-muted-foreground/70 rounded-full typing-dot" />
+                  <span className="w-2 h-2 bg-tai-blue/30 rounded-full typing-dot" />
+                  <span className="w-2 h-2 bg-tai-blue/30 rounded-full typing-dot" />
+                  <span className="w-2 h-2 bg-tai-blue/30 rounded-full typing-dot" />
                 </div>
               </div>
             </div>
@@ -107,13 +103,13 @@ export function ChatWindow({
 
       {/* Error Display */}
       {error && (
-        <div className="px-4 py-2 bg-destructive/10 border-t border-destructive/20">
-          <p className="text-sm text-destructive text-center">{error}</p>
+        <div className="px-4 py-2 bg-red-50 border-t border-red-200">
+          <p className="text-sm text-red-600 text-center">{error}</p>
         </div>
       )}
 
       {/* Input Area */}
-      <div className="border-t bg-card/50 backdrop-blur-sm p-4">
+      <div className="border-t border-black/10 bg-white/50 backdrop-blur-sm p-4">
         <div className="max-w-3xl mx-auto space-y-3">
           {/* Hint Controls */}
           <HintControls
@@ -130,13 +126,13 @@ export function ChatWindow({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Ask a question about your course..."
-              className="flex-1 h-11 bg-background"
+              className="flex-1 h-11 bg-white"
               disabled={isSending}
             />
             <Button 
               type="submit" 
               size="icon" 
-              className="h-11 w-11 shrink-0"
+              className="h-11 w-11 shrink-0 bg-tai-accent hover:bg-[#c94e10]"
               disabled={!inputValue.trim() || isSending}
             >
               {isSending ? (

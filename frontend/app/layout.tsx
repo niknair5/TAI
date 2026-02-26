@@ -1,12 +1,32 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { DM_Serif_Display, DM_Sans, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
+const dmSerif = DM_Serif_Display({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-dm-serif",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  variable: "--font-dm-sans",
+  display: "swap",
+});
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "TA-I | Course Teaching Assistant",
-  description: "AI-powered teaching assistant that helps students learn from course materials",
+  title: "TA-I — The AI Teaching Assistant Built for the Classroom",
+  description: "AI-powered teaching assistant that works within your curriculum — not around it.",
 };
 
 export default function RootLayout({
@@ -15,8 +35,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased`}>
+    <html lang="en">
+      <body className={`${dmSerif.variable} ${dmSans.variable} ${spaceMono.variable} font-sans antialiased`}>
         {children}
         <Toaster />
       </body>
