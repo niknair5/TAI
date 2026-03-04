@@ -27,7 +27,6 @@ export interface ChatMessage {
 
 export interface Source {
   filename: string;
-  chunk_index: number;
 }
 
 export interface ChatSession {

@@ -3,10 +3,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChatWindow } from "@/components/ChatWindow";
+import { SourcesPanel } from "@/components/SourcesPanel";
 import { getCourse, createSession, getSessionMessages, sendMessage, Course, ChatMessage, ChatResponse } from "@/lib/api";
 import { getStoredDeviceId, getStoredRole, getStoredUserId } from "@/lib/utils";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, FileQuestion, Layers, Headphones, BarChart3, Presentation, Video, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
 export default function StudentChatPage() {
@@ -21,6 +23,25 @@ export default function StudentChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [currentHintLevel, setCurrentHintLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
+  const [toolsPanelCollapsed, setToolsPanelCollapsed] = useState(false);
+  const { toast } = useToast();
+
+  const featureButtons = [
+    { label: "Create Quiz", icon: FileQuestion, description: "Generate quizzes from your sources" },
+    { label: "Flashcards", icon: Layers, description: "Create study flashcards" },
+    { label: "Audio", icon: Headphones, description: "Generate audio summaries" },
+    { label: "Reports", icon: BarChart3, description: "View learning reports" },
+    { label: "Slide Deck", icon: Presentation, description: "Create slide presentations" },
+    { label: "Video", icon: Video, description: "Generate video content" },
+  ];
+
+  const handleFeatureClick = (label: string) => {
+    toast({
+      title: "Coming Soon!",
+      description: `${label} will be available in a future update.`,
+    });
+  };
 
   useEffect(() => {
     const role = getStoredRole();
@@ -129,10 +150,10 @@ export default function StudentChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col">
+    <div className="h-screen bg-paper flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-black/10 bg-paper/90 backdrop-blur-md">
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
+      <header className="shrink-0 z-10 border-b border-black/10 bg-paper/90 backdrop-blur-md">
+        <div className="px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild className="shrink-0">
               <Link href="/student">
@@ -157,16 +178,87 @@ export default function StudentChatPage() {
         </div>
       </header>
 
-      {/* Chat Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto flex flex-col">
-        <ChatWindow
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          isSending={isSending}
-          currentHintLevel={currentHintLevel}
-          error={error}
+      {/* Main content: Sources Panel + Chat */}
+      <div className="flex-1 flex min-h-0">
+        {/* Sources Panel */}
+        <SourcesPanel
+          courseId={courseId}
+          selectedFileIds={selectedFileIds}
+          onSelectionChange={setSelectedFileIds}
         />
-      </main>
+
+        {/* Chat Area */}
+        <main className="flex-1 flex flex-col min-w-0">
+          <ChatWindow
+            messages={messages}
+            onSendMessage={handleSendMessage}
+            isSending={isSending}
+            currentHintLevel={currentHintLevel}
+            error={error}
+          />
+        </main>
+
+        {/* Tools Panel (right side) */}
+        {toolsPanelCollapsed ? (
+          <div className="shrink-0 border-l border-black/10 bg-white flex flex-col items-center py-3 w-10">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-ink/40 hover:text-tai-blue"
+              onClick={() => setToolsPanelCollapsed(false)}
+              title="Show tools"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="shrink-0 w-56 border-l border-black/10 bg-white flex flex-col">
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-black/5">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-ink/50">Tools</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-ink/40 hover:text-tai-blue"
+                onClick={() => setToolsPanelCollapsed(true)}
+                title="Collapse panel"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+
+            {/* Feature buttons */}
+            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1.5">
+              {featureButtons.map(({ label, icon: Icon, description }) => (
+                <button
+                  key={label}
+                  onClick={() => handleFeatureClick(label)}
+                  className="w-full flex items-start gap-2.5 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-tai-blue-light/70 group"
+                >
+                  <div className="mt-0.5 w-7 h-7 rounded-md bg-tai-blue-light flex items-center justify-center shrink-0 group-hover:bg-tai-blue/10 transition-colors">
+                    <Icon className="w-3.5 h-3.5 text-tai-blue/60 group-hover:text-tai-blue transition-colors" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink/70 group-hover:text-tai-blue transition-colors leading-snug">
+                      {label}
+                    </p>
+                    <p className="text-[10px] text-ink/30 mt-0.5 leading-tight">
+                      {description}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Coming soon note */}
+            <div className="px-4 py-2.5 border-t border-black/5 bg-paper/50">
+              <p className="text-[10px] text-ink/30 text-center italic">
+                All tools coming soon
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

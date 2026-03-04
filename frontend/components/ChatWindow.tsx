@@ -62,22 +62,24 @@ export function ChatWindow({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-[calc(100vh-3.5rem)]">
+    <div className="flex-1 flex flex-col h-full">
       {/* Messages Area */}
       <ScrollArea className="flex-1 px-4" ref={scrollRef}>
         <div className="py-6 space-y-4 max-w-3xl mx-auto">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-tai-blue-light flex items-center justify-center mb-4">
-                <MessageSquare className="w-8 h-8 text-tai-blue/40" />
+          {/* Welcome message from TAI */}
+          {messages.length === 0 && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-tai-accent/10 flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-tai-accent font-mono">TA</span>
               </div>
-              <h2 className="font-serif text-xl text-tai-blue mb-2">Start a conversation</h2>
-              <p className="text-ink/40 text-sm max-w-md">
-                Ask me about your course materials. I can explain concepts, 
-                give hints on problems, and help you understand the material better.
-              </p>
+              <div className="max-w-[80%] bg-white border border-tai-blue/[0.07] rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
+                <p className="text-sm text-ink/80 leading-relaxed">
+                  Hi there! I'm <strong>TAI</strong>, your virtual teaching assistant. Ask me anything and I'll do my best to help using your course materials and uploaded content. What can I help you with?
+                </p>
+              </div>
             </div>
-          ) : (
+          )}
+          {messages.length > 0 && (
             messages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))

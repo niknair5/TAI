@@ -81,7 +81,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                   key={index}
                   className="text-xs text-ink/35 font-mono"
                 >
-                  {source.filename} (chunk {source.chunk_index})
+                  {source.filename}
                 </li>
               ))}
             </ul>
