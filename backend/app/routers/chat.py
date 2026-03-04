@@ -6,7 +6,7 @@ from app.models import (
     HintControllerInput, HintControllerOutput, Excerpt, Source
 )
 from app.services.retrieval import retrieve_chunks
-from app.services.llm import run_hint_controller, run_student_assistant
+from app.services.llm import run_hint_controller, run_student_assistant, extract_topic
 
 router = APIRouter()
 
@@ -44,15 +44,19 @@ async def chat(request: ChatRequest):
     
     guardrails = Guardrails(**(guardrails_result.data[0]["config"] if guardrails_result.data else {}))
     
-    # Store user message
+    # Retrieve relevant chunks
+    excerpts = retrieve_chunks(UUID(course_id), request.message)
+    
+    # Extract topic from student message (lightweight LLM call)
+    topic = extract_topic(request.message, excerpts)
+    
+    # Store user message with topic
     user_msg_result = supabase.table("chat_messages").insert({
         "session_id": str(request.session_id),
         "role": "user",
-        "content": request.message
+        "content": request.message,
+        "topic": topic
     }).execute()
-    
-    # Retrieve relevant chunks
-    excerpts = retrieve_chunks(UUID(course_id), request.message)
     
     # Calculate hint state from session history
     messages = supabase.table("chat_messages").select("role, hint_level").eq(
@@ -83,12 +87,14 @@ async def chat(request: ChatRequest):
     
     # Handle refusal case
     if controller_output.action == "refuse_out_of_scope":
-        # Store refusal message
+        # Store refusal message with action and empty sources
         assistant_msg = supabase.table("chat_messages").insert({
             "session_id": str(request.session_id),
             "role": "assistant",
             "content": REFUSAL_MESSAGE,
-            "hint_level": 0
+            "hint_level": 0,
+            "action": "refuse_out_of_scope",
+            "sources": []
         }).execute()
         
         return ChatResponse(
@@ -114,12 +120,15 @@ async def chat(request: ChatRequest):
         controller_notes=controller_output.notes_for_assistant
     )
     
-    # Store assistant message
+    # Store assistant message with sources and action
+    sources_json = [s.model_dump() for s in sources]
     assistant_msg = supabase.table("chat_messages").insert({
         "session_id": str(request.session_id),
         "role": "assistant",
         "content": response_content,
-        "hint_level": controller_output.hint_level
+        "hint_level": controller_output.hint_level,
+        "action": controller_output.action,
+        "sources": sources_json
     }).execute()
     
     return ChatResponse(

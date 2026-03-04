@@ -100,3 +100,49 @@ EXCERPTS:
     ]
     
     return response_content, sources
+
+
+TOPIC_EXTRACTION_PROMPT = """You are a topic tagger for an educational Q&A system.
+Given a student's question and (optionally) the course excerpts it matched against,
+return a SHORT topic label (2-5 words) that captures the academic concept being asked about.
+
+Rules:
+- Use canonical / textbook terminology (e.g. "Le Chatelier's Principle", "Binary Search Trees")
+- Be consistent: the same concept should always get the same label
+- If the question is vague or conversational, return "General"
+- Return ONLY the label string, nothing else."""
+
+
+def extract_topic(student_message: str, excerpts: list[Excerpt]) -> str:
+    """
+    Extract a short topic label from the student's message.
+    Uses a lightweight LLM call with temperature=0 for consistency.
+    """
+    settings = get_settings()
+    client = get_openai_client()
+
+    excerpt_context = ""
+    if excerpts:
+        excerpt_context = "\n".join(
+            f"- {e.filename}: {e.content[:120]}..." for e in excerpts[:3]
+        )
+
+    user_content = f"STUDENT_MESSAGE: {student_message}"
+    if excerpt_context:
+        user_content += f"\n\nMATCHED EXCERPTS:\n{excerpt_context}"
+
+    try:
+        response = client.chat.completions.create(
+            model=settings.chat_model,
+            messages=[
+                {"role": "system", "content": TOPIC_EXTRACTION_PROMPT},
+                {"role": "user", "content": user_content},
+            ],
+            temperature=0,
+            max_tokens=30,
+        )
+        topic = response.choices[0].message.content.strip().strip('"').strip("'")
+        # Clamp length to something reasonable
+        return topic[:80] if topic else "General"
+    except Exception:
+        return "General"

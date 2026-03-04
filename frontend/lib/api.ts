@@ -232,3 +232,124 @@ export async function getCourseActivity(courseId: string): Promise<CourseActivit
   if (!res.ok) throw new Error("Failed to fetch course activity");
   return res.json();
 }
+
+// =====================================================
+// Course analytics (full dashboard) endpoints
+// =====================================================
+
+export interface AnalyticsOverview {
+  total_sessions: number;
+  total_messages: number;
+  unique_students: number;
+  avg_queries_per_student: number;
+  avg_session_depth: number;
+}
+
+export interface TopicItem {
+  topic: string;
+  count: number;
+  avg_hint_level: number;
+  avg_turns_to_resolve: number;
+  follow_up_ratio: number;
+}
+
+export interface FirstTouchTopic {
+  topic: string;
+  count: number;
+}
+
+export interface TopicAnalysis {
+  top_topics: TopicItem[];
+  first_touch_topics: FirstTouchTopic[];
+}
+
+export interface SourceItem {
+  filename: string;
+  reference_count: number;
+}
+
+export interface CitationGap {
+  filename: string;
+  unanswered_count: number;
+}
+
+export interface SourceAnalysis {
+  top_sources: SourceItem[];
+  citation_gaps: CitationGap[];
+}
+
+export interface DifficultTopic {
+  topic: string;
+  follow_up_count: number;
+  avg_hints: number;
+}
+
+export interface DeadEndSession {
+  session_id: string;
+  student_id: string;
+  message_count: number;
+  last_question: string;
+  created_at: string;
+}
+
+export interface UnansweredQuestion {
+  question: string;
+  created_at: string;
+  student_id: string;
+}
+
+export interface StruggleSignals {
+  difficult_topics: DifficultTopic[];
+  dead_end_sessions: DeadEndSession[];
+  unanswered_questions: UnansweredQuestion[];
+}
+
+export interface HourlyBucket {
+  hour: number;
+  count: number;
+}
+
+export interface DailyBucket {
+  day_of_week: string;
+  count: number;
+}
+
+export interface DepthBucket {
+  bucket: string;
+  count: number;
+}
+
+export interface DailyActivity {
+  date: string;
+  count: number;
+}
+
+export interface Engagement {
+  hourly_distribution: HourlyBucket[];
+  daily_distribution: DailyBucket[];
+  session_depth_buckets: DepthBucket[];
+  activity_over_time: DailyActivity[];
+}
+
+export interface Cohorts {
+  total_enrolled: number;
+  never_used: number;
+  light_users: number;
+  moderate_users: number;
+  heavy_users: number;
+}
+
+export interface CourseAnalytics {
+  overview: AnalyticsOverview;
+  topic_analysis: TopicAnalysis;
+  source_analysis: SourceAnalysis;
+  struggle_signals: StruggleSignals;
+  engagement: Engagement;
+  cohorts: Cohorts;
+}
+
+export async function getCourseAnalytics(courseId: string): Promise<CourseAnalytics> {
+  const res = await fetch(`${API_URL}/api/courses/${courseId}/analytics`);
+  if (!res.ok) throw new Error("Failed to fetch course analytics");
+  return res.json();
+}
