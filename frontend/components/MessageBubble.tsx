@@ -65,28 +65,31 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </div>
         )}
 
-        {/* Sources */}
-        {!isUser && message.sources && message.sources.length > 0 && (
-          <div className={cn(
-            "mt-3 pt-3 border-t",
-            isRefusal ? "border-amber-200" : "border-tai-blue/[0.07]"
-          )}>
-            <p className="text-xs font-medium text-ink/40 mb-1.5 flex items-center gap-1">
-              <FileText className="w-3 h-3" />
-              Sources
-            </p>
-            <ul className="space-y-1">
-              {message.sources.map((source, index) => (
-                <li
-                  key={index}
-                  className="text-xs text-ink/35 font-mono"
-                >
-                  {source.filename}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {/* Sources (deduplicated) */}
+        {!isUser && message.sources && message.sources.length > 0 && (() => {
+          const unique = [...new Map(message.sources.map(s => [s.filename, s])).values()];
+          return (
+            <div className={cn(
+              "mt-3 pt-3 border-t",
+              isRefusal ? "border-amber-200" : "border-tai-blue/[0.07]"
+            )}>
+              <p className="text-xs font-medium text-ink/40 mb-1.5 flex items-center gap-1">
+                <FileText className="w-3 h-3" />
+                Sources
+              </p>
+              <ul className="space-y-1">
+                {unique.map((source) => (
+                  <li
+                    key={source.filename}
+                    className="text-xs text-ink/35 font-mono"
+                  >
+                    {source.filename}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ from app.models import (
 )
 from app.prompts.hint_controller import HINT_CONTROLLER_PROMPT
 from app.prompts.student_assistant import STUDENT_ASSISTANT_PROMPT
+from app.prompts.redirect import SOCRATIC_REDIRECT_PROMPT, build_policy_acknowledgment
 from app.services.embeddings import get_openai_client
 
 
@@ -35,13 +36,16 @@ EXCERPT_HIT_COUNT: {input_data.excerpt_hit_count}"""
     
     result = json.loads(response.choices[0].message.content)
     
-    # Clamp hint level to max allowed
-    hint_level = min(result.get("hint_level", 0), input_data.guardrails.max_hint_level)
+    raw_hint_level = result.get("hint_level", 0)
+    clamped_hint_level = min(raw_hint_level, input_data.guardrails.max_hint_level)
     
     return HintControllerOutput(
         action=result.get("action", "answer"),
-        hint_level=hint_level,
-        notes_for_assistant=result.get("notes_for_assistant", "")
+        hint_level=clamped_hint_level,
+        raw_hint_level=raw_hint_level,
+        notes_for_assistant=result.get("notes_for_assistant", ""),
+        student_requested_code=result.get("student_requested_code", False),
+        student_requested_worked_example=result.get("student_requested_worked_example", False),
     )
 
 
@@ -50,7 +54,8 @@ def run_student_assistant(
     excerpts: list[Excerpt],
     guardrails: Guardrails,
     hint_level: int,
-    controller_notes: str
+    controller_notes: str,
+    action: str = "answer",
 ) -> tuple[str, list[Source]]:
     """
     Run the student assistant to generate a response.
@@ -75,6 +80,8 @@ Content:
 
 HINT_LEVEL: {hint_level}
 
+ACTION: {action}
+
 GUARDRAILS: {guardrails.model_dump_json()}
 
 CONTROLLER_NOTES: {controller_notes}
@@ -92,14 +99,84 @@ EXCERPTS:
     )
     
     response_content = response.choices[0].message.content
-    
-    # Extract sources from the excerpts that were provided
-    sources = [
-        Source(filename=e.filename, chunk_index=e.chunk_index)
-        for e in excerpts
-    ]
+    sources = _extract_sources(excerpts)
     
     return response_content, sources
+
+
+def _extract_sources(excerpts: list[Excerpt]) -> list[Source]:
+    seen: set[str] = set()
+    sources: list[Source] = []
+    for e in excerpts:
+        if e.filename not in seen:
+            seen.add(e.filename)
+            sources.append(Source(filename=e.filename, chunk_index=e.chunk_index))
+    return sources
+
+
+def _format_excerpts(excerpts: list[Excerpt]) -> str:
+    if not excerpts:
+        return "No excerpts available."
+    parts: list[str] = []
+    for i, excerpt in enumerate(excerpts):
+        parts.append(
+            f"--- Excerpt {i+1} ---\n"
+            f"Filename: {excerpt.filename}\n"
+            f"Chunk ID: {excerpt.chunk_index}\n"
+            f"Content:\n{excerpt.content}\n---"
+        )
+    return "\n".join(parts)
+
+
+def build_redirect_response(
+    breaches: list[str],
+    guardrails: Guardrails,
+    student_message: str,
+    excerpts: list[Excerpt],
+    clamped_hint_level: int,
+    raw_hint_level: int,
+) -> tuple[str, list[Source]]:
+    """
+    Build a redirect response when a guardrail breach is detected.
+    Returns (combined_response, sources).
+
+    The response has two parts:
+    1. A deterministic, template-driven policy acknowledgment
+    2. An LLM-generated Socratic redirect at the allowed hint level
+    """
+    acknowledgment = build_policy_acknowledgment(
+        breaches=breaches,
+        raw_hint_level=raw_hint_level,
+        max_hint_level=guardrails.max_hint_level,
+        instructor_note=guardrails.instructor_note,
+    )
+
+    settings = get_settings()
+    client = get_openai_client()
+
+    excerpts_text = _format_excerpts(excerpts)
+
+    user_content = f"""STUDENT_MESSAGE: {student_message}
+
+ALLOWED_HINT_LEVEL: {clamped_hint_level}
+
+EXCERPTS:
+{excerpts_text}"""
+
+    response = client.chat.completions.create(
+        model=settings.chat_model,
+        messages=[
+            {"role": "system", "content": SOCRATIC_REDIRECT_PROMPT},
+            {"role": "user", "content": user_content},
+        ],
+        temperature=0.3,
+    )
+
+    socratic_redirect = response.choices[0].message.content
+    combined = f"{acknowledgment}\n\n---\n\n{socratic_redirect}"
+    sources = _extract_sources(excerpts)
+
+    return combined, sources
 
 
 TOPIC_EXTRACTION_PROMPT = """You are a topic tagger for an educational Q&A system.

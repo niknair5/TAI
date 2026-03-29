@@ -23,17 +23,21 @@ class Course(BaseModel):
 class Guardrails(BaseModel):
     allow_final_answer: bool = False
     allow_code: bool = False
+    allow_worked_examples: bool = True
     max_hint_level: int = Field(default=2, ge=0, le=3)
     course_level: Literal["elementary", "middle", "high", "university"] = "university"
     assessment_mode: Literal["homework", "quiz", "exam", "practice", "unknown"] = "homework"
+    instructor_note: str | None = None
 
 
 class GuardrailsUpdate(BaseModel):
     allow_final_answer: bool | None = None
     allow_code: bool | None = None
+    allow_worked_examples: bool | None = None
     max_hint_level: int | None = Field(default=None, ge=0, le=3)
     course_level: Literal["elementary", "middle", "high", "university"] | None = None
     assessment_mode: Literal["homework", "quiz", "exam", "practice", "unknown"] | None = None
+    instructor_note: str | None = None
 
 
 # === Session Models ===
@@ -76,7 +80,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     message: ChatMessage
     hint_level: int
-    action: Literal["answer", "answer_with_integrity_refusal", "refuse_out_of_scope"]
+    action: Literal["answer", "answer_with_integrity_refusal", "refuse_out_of_scope", "redirected"]
 
 
 # === Chunk/Retrieval Models ===
@@ -131,4 +135,7 @@ class HintControllerInput(BaseModel):
 class HintControllerOutput(BaseModel):
     action: Literal["answer", "answer_with_integrity_refusal", "refuse_out_of_scope"]
     hint_level: int = Field(ge=0, le=3)
+    raw_hint_level: int = Field(ge=0, le=3)
     notes_for_assistant: str
+    student_requested_code: bool = False
+    student_requested_worked_example: bool = False

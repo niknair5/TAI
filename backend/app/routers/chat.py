@@ -6,7 +6,7 @@ from app.models import (
     HintControllerInput, HintControllerOutput, Excerpt, Source
 )
 from app.services.retrieval import retrieve_chunks
-from app.services.llm import run_hint_controller, run_student_assistant, extract_topic
+from app.services.llm import run_hint_controller, run_student_assistant, build_redirect_response, extract_topic
 
 router = APIRouter()
 
@@ -111,15 +111,38 @@ async def chat(request: ChatRequest):
             action="refuse_out_of_scope"
         )
     
-    # Run student assistant
-    response_content, sources = run_student_assistant(
-        student_message=request.message,
-        excerpts=excerpts,
-        guardrails=guardrails,
-        hint_level=controller_output.hint_level,
-        controller_notes=controller_output.notes_for_assistant
-    )
-    
+    # Detect guardrail breaches
+    breaches: list[str] = []
+    if controller_output.raw_hint_level > guardrails.max_hint_level:
+        breaches.append("hint_level_exceeded")
+    if controller_output.student_requested_code and not guardrails.allow_code:
+        breaches.append("code_not_allowed")
+    if controller_output.student_requested_worked_example and not guardrails.allow_worked_examples:
+        breaches.append("worked_example_not_allowed")
+
+    if breaches:
+        # Redirect: deterministic acknowledgment + Socratic follow-up
+        response_content, sources = build_redirect_response(
+            breaches=breaches,
+            guardrails=guardrails,
+            student_message=request.message,
+            excerpts=excerpts,
+            clamped_hint_level=controller_output.hint_level,
+            raw_hint_level=controller_output.raw_hint_level,
+        )
+        response_action = "redirected"
+    else:
+        # Normal path: run student assistant
+        response_content, sources = run_student_assistant(
+            student_message=request.message,
+            excerpts=excerpts,
+            guardrails=guardrails,
+            hint_level=controller_output.hint_level,
+            controller_notes=controller_output.notes_for_assistant,
+            action=controller_output.action,
+        )
+        response_action = controller_output.action
+
     # Store assistant message with sources and action
     sources_json = [s.model_dump() for s in sources]
     assistant_msg = supabase.table("chat_messages").insert({
@@ -127,7 +150,7 @@ async def chat(request: ChatRequest):
         "role": "assistant",
         "content": response_content,
         "hint_level": controller_output.hint_level,
-        "action": controller_output.action,
+        "action": response_action,
         "sources": sources_json
     }).execute()
     
@@ -142,5 +165,5 @@ async def chat(request: ChatRequest):
             sources=sources
         ),
         hint_level=controller_output.hint_level,
-        action=controller_output.action
+        action=response_action
     )

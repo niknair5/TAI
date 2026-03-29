@@ -10,9 +10,11 @@ export interface Course {
 export interface Guardrails {
   allow_final_answer: boolean;
   allow_code: boolean;
+  allow_worked_examples: boolean;
   max_hint_level: number;
   course_level: "elementary" | "middle" | "high" | "university";
   assessment_mode: "homework" | "quiz" | "exam" | "practice" | "unknown";
+  instructor_note: string | null;
 }
 
 export interface ChatMessage {

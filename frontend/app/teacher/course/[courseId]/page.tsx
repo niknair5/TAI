@@ -19,7 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  XAxis, YAxis, Tooltip, ResponsiveContainer,
   AreaChart, Area, Cell, PieChart, Pie,
 } from "recharts";
 
@@ -58,6 +58,114 @@ function Section({ icon: Icon, title, description, children }: {
         </div>
       </div>
       {children}
+    </div>
+  );
+}
+
+// ─── Calendar Heatmap (replaces hour / day-of-week charts) ──
+function CalendarHeatmap({ data }: { data: { date: string; count: number }[] }) {
+  // Build a lookup map: "YYYY-MM-DD" → count
+  const lookup = new Map(data.map((d) => [d.date, d.count]));
+  const maxCount = Math.max(...data.map((d) => d.count), 1);
+
+  // Determine which months to show (derive from data, fall back to current)
+  const allDates = data.map((d) => new Date(d.date)).sort((a, b) => a.getTime() - b.getTime());
+  const now = new Date();
+  const months: Date[] = [];
+  if (allDates.length > 0) {
+    // Show distinct months that appear in the data (up to 3)
+    const seen = new Set<string>();
+    for (const d of allDates) {
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!seen.has(key)) { seen.add(key); months.push(new Date(d.getFullYear(), d.getMonth(), 1)); }
+    }
+    // If only one month, add the next month too for context
+    if (months.length === 1) {
+      const m = months[0];
+      const prev = new Date(m.getFullYear(), m.getMonth() - 1, 1);
+      if (prev < m) months.unshift(prev);
+    }
+  } else {
+    months.push(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    months.push(new Date(now.getFullYear(), now.getMonth(), 1));
+  }
+  // Keep last 3 months max
+  const displayMonths = months.slice(-3);
+
+  const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  function colorForCount(count: number): string {
+    if (count === 0) return "#F3F4F6"; // gray-100
+    const ratio = count / maxCount;
+    if (ratio <= 0.25) return "#DBEAFE"; // blue-100
+    if (ratio <= 0.5) return "#93C5FD";  // blue-300
+    if (ratio <= 0.75) return "#3B82F6"; // blue-500
+    return BLUE;                          // tai-blue
+  }
+
+  function buildMonthGrid(monthStart: Date) {
+    const year = monthStart.getFullYear();
+    const month = monthStart.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    // getDay(): 0=Sun, we want 0=Mon  →  (getDay()+6)%7
+    const firstDayOffset = (new Date(year, month, 1).getDay() + 6) % 7;
+    const cells: { day: number | null; count: number; dateStr: string }[] = [];
+    // Leading blanks
+    for (let i = 0; i < firstDayOffset; i++) cells.push({ day: null, count: 0, dateStr: "" });
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      cells.push({ day: d, count: lookup.get(dateStr) || 0, dateStr });
+    }
+    return cells;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-8">
+        {displayMonths.map((m) => {
+          const grid = buildMonthGrid(m);
+          const monthLabel = m.toLocaleString("default", { month: "long", year: "numeric" });
+          return (
+            <div key={monthLabel} className="flex-1 min-w-[260px]">
+              <p className="text-xs font-medium text-tai-blue mb-2">{monthLabel}</p>
+              {/* Day-of-week header */}
+              <div className="grid grid-cols-7 gap-[3px] mb-[3px]">
+                {dayLabels.map((dl) => (
+                  <div key={dl} className="text-[9px] text-ink/30 text-center font-mono">{dl}</div>
+                ))}
+              </div>
+              {/* Calendar cells */}
+              <div className="grid grid-cols-7 gap-[3px]">
+                {grid.map((cell, idx) => (
+                  <div
+                    key={idx}
+                    title={cell.day ? `${cell.dateStr}: ${cell.count} messages` : ""}
+                    className={cn(
+                      "aspect-square rounded-[3px] text-[9px] flex items-center justify-center transition-colors",
+                      cell.day ? "cursor-default" : "",
+                    )}
+                    style={{ backgroundColor: cell.day ? colorForCount(cell.count) : "transparent" }}
+                  >
+                    {cell.day && cell.count > 0 && (
+                      <span className={cn("font-mono", cell.count / maxCount > 0.5 ? "text-white/80" : "text-ink/40")}>
+                        {cell.count}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* Legend */}
+      <div className="flex items-center gap-1.5 justify-end">
+        <span className="text-[10px] text-ink/30 mr-1">Less</span>
+        {[0, 0.25, 0.5, 0.75, 1].map((r) => (
+          <div key={r} className="w-3 h-3 rounded-[2px]" style={{ backgroundColor: colorForCount(r === 0 ? 0 : Math.ceil(r * maxCount)) }} />
+        ))}
+        <span className="text-[10px] text-ink/30 ml-1">More</span>
+      </div>
     </div>
   );
 }
@@ -384,6 +492,19 @@ export default function TeacherDashboardPage() {
                   </button>
                 </div>
 
+                {/* Allow Worked Examples */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-sm text-tai-blue">Allow Worked Examples</p>
+                    <p className="text-xs text-ink/40">Let TA-I provide worked examples with different numbers</p>
+                  </div>
+                  <button type="button" role="switch" aria-checked={guardrails.allow_worked_examples} aria-label="Allow worked examples"
+                    onClick={() => handleGuardrailChange("allow_worked_examples", !guardrails.allow_worked_examples)}
+                    className={cn("w-12 h-6 rounded-full transition-colors relative", guardrails.allow_worked_examples ? "bg-tai-blue" : "bg-ink/15")}>
+                    <div className={cn("w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform shadow-sm", guardrails.allow_worked_examples ? "translate-x-6" : "translate-x-0.5")} />
+                  </button>
+                </div>
+
                 {/* Max Hint Level */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -431,6 +552,19 @@ export default function TeacherDashboardPage() {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Instructor Note */}
+                <div>
+                  <p className="font-medium text-sm text-tai-blue mb-1">Instructor Note</p>
+                  <p className="text-xs text-ink/40 mb-3">Optional message shown to students when a guardrail redirect occurs</p>
+                  <textarea
+                    value={guardrails.instructor_note ?? ""}
+                    onChange={(e) => handleGuardrailChange("instructor_note", e.target.value || null)}
+                    placeholder="e.g. Try working through the practice problems in Chapter 3 first."
+                    rows={2}
+                    className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:ring-2 focus:ring-tai-blue/30 resize-none"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -688,59 +822,20 @@ export default function TeacherDashboardPage() {
 
                 {/* ── Section 5: Engagement Patterns ── */}
                 <Section icon={Clock} title="Engagement & Behavior Patterns" description="When and how are students using TA-I?">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {/* Activity by Hour */}
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Activity by Hour</CardTitle>
-                        <CardDescription className="text-xs">Are students cramming or studying consistently?</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {a.engagement.hourly_distribution.every((h) => h.count === 0) ? (
-                          <p className="text-xs text-ink/35 text-center py-4">No activity data yet</p>
-                        ) : (
-                          <div className="h-40">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={a.engagement.hourly_distribution} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                                <XAxis dataKey="hour" tick={{ fontSize: 10, fill: INK_30 }} tickLine={false} axisLine={false}
-                                  tickFormatter={(h: number) => (h % 6 === 0 ? `${h}:00` : "")} />
-                                <YAxis tick={{ fontSize: 10, fill: INK_30 }} tickLine={false} axisLine={false} />
-                                <Tooltip content={<ChartTooltip />} />
-                                <Bar dataKey="count" radius={[2, 2, 0, 0]}>
-                                  {a.engagement.hourly_distribution.map((entry, idx) => (
-                                    <Cell key={idx} fill={entry.hour >= 22 || entry.hour < 6 ? ACCENT : BLUE} />
-                                  ))}
-                                </Bar>
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    {/* Activity by Day */}
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Activity by Day of Week</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {a.engagement.daily_distribution.every((d) => d.count === 0) ? (
-                          <p className="text-xs text-ink/35 text-center py-4">No activity data yet</p>
-                        ) : (
-                          <div className="h-40">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={a.engagement.daily_distribution} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                                <XAxis dataKey="day_of_week" tick={{ fontSize: 10, fill: INK_30 }} tickLine={false} axisLine={false} />
-                                <YAxis tick={{ fontSize: 10, fill: INK_30 }} tickLine={false} axisLine={false} />
-                                <Tooltip content={<ChartTooltip />} />
-                                <Bar dataKey="count" fill={BLUE} radius={[2, 2, 0, 0]} />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
+                  {/* Calendar Heatmap – replaces Activity by Hour & Day of Week */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Activity Calendar</CardTitle>
+                      <CardDescription className="text-xs">Daily usage across the calendar — spot cramming vs consistent study</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {a.engagement.activity_over_time.length === 0 ? (
+                        <p className="text-xs text-ink/35 text-center py-4">No activity data yet</p>
+                      ) : (
+                        <CalendarHeatmap data={a.engagement.activity_over_time} />
+                      )}
+                    </CardContent>
+                  </Card>
 
                   <div className="grid md:grid-cols-2 gap-4">
                     {/* Session Depth Distribution */}
