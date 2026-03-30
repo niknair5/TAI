@@ -67,7 +67,12 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         {/* Sources (deduplicated) */}
         {!isUser && message.sources && message.sources.length > 0 && (() => {
-          const unique = [...new Map(message.sources.map(s => [s.filename, s])).values()];
+          // Deduplicate sources by `filename` without iterating a Map iterator.
+          const byFilename: Record<string, (typeof message.sources)[number]> = {};
+          message.sources.forEach((s) => {
+            byFilename[s.filename] = s;
+          });
+          const unique = Object.values(byFilename);
           return (
             <div className={cn(
               "mt-3 pt-3 border-t",

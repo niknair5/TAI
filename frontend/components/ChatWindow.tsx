@@ -74,7 +74,7 @@ export function ChatWindow({
               </div>
               <div className="max-w-[80%] bg-white border border-tai-blue/[0.07] rounded-2xl rounded-tl-md px-4 py-3 shadow-sm">
                 <p className="text-sm text-ink/80 leading-relaxed">
-                  Hi there! I'm <strong>TAI</strong>, your virtual teaching assistant. Ask me anything and I'll do my best to help using your course materials and uploaded content. What can I help you with?
+                  Hi there! I&apos;m <strong>TAI</strong>, your virtual teaching assistant. Ask me anything and I&apos;ll do my best to help using your course materials and uploaded content. What can I help you with?
                 </p>
               </div>
             </div>
