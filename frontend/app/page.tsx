@@ -131,19 +131,42 @@ export default function LandingPage() {
           <span className="w-2 h-2 rounded-full bg-tai-accent inline-block" />
           TA-I
         </span>
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
-          <Link
-            href="/auth/student-login"
-            className="text-sm font-medium text-ink/50 hover:text-tai-blue px-3 py-2"
-          >
-            Student sign in
-          </Link>
-          <Link
-            href="/auth/instructor-login"
-            className="text-sm font-medium text-tai-blue border border-tai-blue/30 px-4 py-2 rounded hover:bg-tai-blue-light transition-colors"
-          >
-            Instructor sign in
-          </Link>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 flex-wrap justify-end text-sm">
+          <div className="flex items-center justify-end gap-2 sm:gap-3 flex-wrap">
+            <span className="text-ink/35 text-xs uppercase tracking-wider hidden sm:inline">
+              Students
+            </span>
+            <Link
+              href="/auth/student-login"
+              className="font-medium text-ink/50 hover:text-tai-blue px-2 py-2 sm:px-3"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/join"
+              className="font-medium text-tai-blue px-2 py-2 sm:px-3 hover:underline"
+            >
+              Sign up
+            </Link>
+          </div>
+          <span className="hidden sm:block h-4 w-px bg-black/10 shrink-0" aria-hidden />
+          <div className="flex items-center justify-end gap-2 sm:gap-3 flex-wrap">
+            <span className="text-ink/35 text-xs uppercase tracking-wider hidden sm:inline">
+              Instructors
+            </span>
+            <Link
+              href="/auth/instructor-login"
+              className="font-medium text-tai-blue border border-tai-blue/30 px-3 py-2 rounded hover:bg-tai-blue-light transition-colors"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/auth/instructor-signup"
+              className="font-medium text-tai-blue px-2 py-2 sm:px-3 hover:underline"
+            >
+              Sign up
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -189,15 +212,38 @@ export default function LandingPage() {
                   </Link>
                 </Button>
               </div>
-              <p className="text-xs text-ink/35 mt-4">
-                Instructors: new here?{" "}
-                <Link href="/auth/instructor-signup" className="text-tai-blue hover:underline">
-                  Create an account
-                </Link>
-              </p>
+              <div className="mt-8 space-y-3 text-sm text-ink/55 max-w-md border-t border-black/10 pt-8">
+                <p>
+                  <span className="font-semibold text-ink/80">Students</span>
+                  {" — "}
+                  Use the code from your instructor to{" "}
+                  <Link href="/join" className="text-tai-blue font-medium hover:underline">
+                    create your account
+                  </Link>
+                  {" "}(.edu email). Already set up?{" "}
+                  <Link href="/auth/student-login" className="text-tai-blue font-medium hover:underline">
+                    Sign in
+                  </Link>
+                  .
+                </p>
+                <p>
+                  <span className="font-semibold text-ink/80">Instructors</span>
+                  {" — "}
+                  <Link href="/auth/instructor-signup" className="text-tai-blue font-medium hover:underline">
+                    Create an account
+                  </Link>
+                  {" "}
+                  to build courses, or{" "}
+                  <Link href="/auth/instructor-login" className="text-tai-blue font-medium hover:underline">
+                    sign in
+                  </Link>
+                  {" "}
+                  to your dashboard.
+                </p>
+              </div>
             </div>
 
-            <div className="hidden md:flex items-center justify-center py-16 px-6 animate-rise animate-rise-delay-2">
+            <div className="flex items-center justify-center py-12 px-6 md:py-16 -mx-6 md:mx-0 mt-4 md:mt-0 bg-tai-blue md:bg-transparent rounded-b-2xl md:rounded-none animate-rise animate-rise-delay-2">
               <div className="bg-white/[0.08] border border-white/[0.14] rounded-2xl p-8 w-full max-w-sm shadow-2xl backdrop-blur-sm">
                 <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
                   <div className="w-10 h-10 rounded-full bg-tai-accent flex items-center justify-center font-mono text-xs font-bold text-white">

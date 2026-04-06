@@ -415,12 +415,26 @@ export async function signupStudent(
   return (await res.json()) as { course_id?: string };
 }
 
+/** Shown when fetch fails before any HTTP response (CORS, wrong URL, API down). */
+export function getApiUnreachableHint(): string {
+  return `Could not reach the API at ${API_URL}. For local dev, run the FastAPI backend and set NEXT_PUBLIC_API_URL=http://localhost:8000 in frontend/.env.local (restart next dev). For a hosted API, confirm /health loads, Railway is awake, and CORS_ORIGINS includes this site's origin (e.g. http://localhost:3000).`;
+}
+
 export async function loginWithBackend(email: string, password: string): Promise<void> {
-  const res = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg === "Failed to fetch" || msg.includes("NetworkError") || msg.includes("Load failed")) {
+      throw new Error(getApiUnreachableHint());
+    }
+    throw e;
+  }
   if (!res.ok) throw new Error(await parseApiError(res));
   const data = (await res.json()) as {
     access_token: string;
