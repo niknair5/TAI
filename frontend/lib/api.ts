@@ -1,9 +1,58 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { createClient } from "@/lib/supabase/client";
+
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export function isEduEmail(email: string): boolean {
+  const e = email.trim().toLowerCase();
+  const i = e.indexOf("@");
+  if (i < 0) return false;
+  return e.slice(i + 1).endsWith(".edu");
+}
+
+export async function parseApiError(res: Response): Promise<string> {
+  const text = await res.text();
+  try {
+    const body = JSON.parse(text) as { detail?: unknown };
+    const d = body.detail;
+    if (typeof d === "string") return d;
+    if (Array.isArray(d)) {
+      return (
+        d
+          .map((x: { msg?: string }) => x.msg)
+          .filter(Boolean)
+          .join(", ") || "Request failed"
+      );
+    }
+    return "Request failed";
+  } catch {
+    return text || "Request failed";
+  }
+}
+
+async function getAccessToken(): Promise<string> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error("Not authenticated");
+  }
+  return session.access_token;
+}
+
+function authJsonHeaders(token: string): HeadersInit {
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+}
 
 export interface Course {
   id: string;
   name: string;
-  class_code: string;
+  description: string;
+  join_code: string;
+  instructor_id: string;
   created_at: string;
 }
 
@@ -50,37 +99,50 @@ export interface ChatResponse {
   action: "answer" | "answer_with_integrity_refusal" | "refuse_out_of_scope";
 }
 
-// Course endpoints
-export async function getCourseByCode(classCode: string): Promise<Course | null> {
-  const res = await fetch(`${API_URL}/api/courses/by-code/${encodeURIComponent(classCode)}`);
-  if (!res.ok) {
-    if (res.status === 404) return null;
-    throw new Error("Failed to fetch course");
-  }
+export async function validateJoinCode(code: string): Promise<{ name: string } | null> {
+  const normalized = code.trim().toUpperCase();
+  const res = await fetch(
+    `${API_URL}/api/courses/validate-join-code/${encodeURIComponent(normalized)}`
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to validate join code");
   return res.json();
 }
 
 export async function getCourse(courseId: string): Promise<Course> {
-  const res = await fetch(`${API_URL}/api/courses/${courseId}`);
+  const token = await getAccessToken();
+  const res = await fetch(`${API_URL}/api/courses/${courseId}`, {
+    headers: authJsonHeaders(token),
+  });
   if (!res.ok) throw new Error("Failed to fetch course");
   return res.json();
 }
 
-export async function createCourse(name: string, classCode: string): Promise<Course> {
+export async function createCourse(name: string, description?: string): Promise<Course> {
+  const token = await getAccessToken();
   const res = await fetch(`${API_URL}/api/courses`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, class_code: classCode }),
+    headers: authJsonHeaders(token),
+    body: JSON.stringify({ name, description: description ?? "" }),
   });
-  if (!res.ok) throw new Error("Failed to create course");
+  if (!res.ok) throw new Error(await parseApiError(res));
   return res.json();
 }
 
-// Session endpoints
+export async function getMyCourses(): Promise<Course[]> {
+  const token = await getAccessToken();
+  const res = await fetch(`${API_URL}/api/me/courses`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Failed to fetch courses");
+  return res.json();
+}
+
 export async function createSession(courseId: string, studentId: string): Promise<ChatSession> {
+  const token = await getAccessToken();
   const res = await fetch(`${API_URL}/api/sessions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authJsonHeaders(token),
     body: JSON.stringify({ course_id: courseId, student_id: studentId }),
   });
   if (!res.ok) throw new Error("Failed to create session");
@@ -88,104 +150,61 @@ export async function createSession(courseId: string, studentId: string): Promis
 }
 
 export async function getSessionMessages(sessionId: string): Promise<ChatMessage[]> {
-  const res = await fetch(`${API_URL}/api/sessions/${sessionId}/messages`);
+  const token = await getAccessToken();
+  const res = await fetch(`${API_URL}/api/sessions/${sessionId}/messages`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) throw new Error("Failed to fetch messages");
   return res.json();
 }
 
-// Chat endpoint
 export async function sendMessage(request: ChatRequest): Promise<ChatResponse> {
+  const token = await getAccessToken();
   const res = await fetch(`${API_URL}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authJsonHeaders(token),
     body: JSON.stringify(request),
   });
   if (!res.ok) throw new Error("Failed to send message");
   return res.json();
 }
 
-// Upload endpoint
 export async function uploadFile(courseId: string, file: File): Promise<{ success: boolean; chunks_created: number }> {
+  const token = await getAccessToken();
   const formData = new FormData();
   formData.append("file", file);
   formData.append("course_id", courseId);
-
   const res = await fetch(`${API_URL}/api/upload`, {
     method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });
   if (!res.ok) throw new Error("Failed to upload file");
   return res.json();
 }
 
-// Guardrails endpoint
 export async function getGuardrails(courseId: string): Promise<Guardrails> {
-  const res = await fetch(`${API_URL}/api/courses/${courseId}/guardrails`);
+  const token = await getAccessToken();
+  const res = await fetch(`${API_URL}/api/courses/${courseId}/guardrails`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) throw new Error("Failed to fetch guardrails");
   return res.json();
 }
 
-export async function updateGuardrails(courseId: string, guardrails: Partial<Guardrails>): Promise<Guardrails> {
+export async function updateGuardrails(
+  courseId: string,
+  guardrails: Partial<Guardrails>
+): Promise<Guardrails> {
+  const token = await getAccessToken();
   const res = await fetch(`${API_URL}/api/courses/${courseId}/guardrails`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: authJsonHeaders(token),
     body: JSON.stringify(guardrails),
   });
   if (!res.ok) throw new Error("Failed to update guardrails");
   return res.json();
 }
-
-// =====================================================
-// User endpoints
-// =====================================================
-
-export interface User {
-  id: string;
-  device_id: string;
-  role: "student" | "teacher";
-  display_name: string | null;
-  created_at: string;
-}
-
-export async function createOrGetUser(deviceId: string, role: "student" | "teacher"): Promise<User> {
-  const res = await fetch(`${API_URL}/api/users`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ device_id: deviceId, role }),
-  });
-  if (!res.ok) throw new Error("Failed to create user");
-  return res.json();
-}
-
-export async function getUserCourses(userId: string): Promise<Course[]> {
-  const res = await fetch(`${API_URL}/api/users/${userId}/courses`);
-  if (!res.ok) throw new Error("Failed to fetch user courses");
-  return res.json();
-}
-
-export async function joinCourse(userId: string, classCode: string): Promise<Course> {
-  const res = await fetch(`${API_URL}/api/users/${userId}/courses/join`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ class_code: classCode }),
-  });
-  if (!res.ok) {
-    if (res.status === 404) throw new Error("Course not found");
-    throw new Error("Failed to join course");
-  }
-  return res.json();
-}
-
-export async function leaveCourse(userId: string, courseId: string): Promise<void> {
-  const res = await fetch(`${API_URL}/api/users/${userId}/courses/${courseId}`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error("Failed to leave course");
-}
-
-// =====================================================
-// Course files endpoints
-// =====================================================
 
 export interface CourseFile {
   id: string;
@@ -196,21 +215,22 @@ export interface CourseFile {
 }
 
 export async function getCourseFiles(courseId: string): Promise<CourseFile[]> {
-  const res = await fetch(`${API_URL}/api/courses/${courseId}/files`);
+  const token = await getAccessToken();
+  const res = await fetch(`${API_URL}/api/courses/${courseId}/files`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) throw new Error("Failed to fetch course files");
   return res.json();
 }
 
 export async function deleteCourseFile(courseId: string, fileId: string): Promise<void> {
+  const token = await getAccessToken();
   const res = await fetch(`${API_URL}/api/courses/${courseId}/files/${fileId}`, {
     method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Failed to delete file");
 }
-
-// =====================================================
-// Course activity endpoints
-// =====================================================
 
 export interface ActivityItem {
   session_id: string;
@@ -230,14 +250,13 @@ export interface CourseActivity {
 }
 
 export async function getCourseActivity(courseId: string): Promise<CourseActivity> {
-  const res = await fetch(`${API_URL}/api/courses/${courseId}/activity`);
+  const token = await getAccessToken();
+  const res = await fetch(`${API_URL}/api/courses/${courseId}/activity`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) throw new Error("Failed to fetch course activity");
   return res.json();
 }
-
-// =====================================================
-// Course analytics (full dashboard) endpoints
-// =====================================================
 
 export interface AnalyticsOverview {
   total_sessions: number;
@@ -351,7 +370,66 @@ export interface CourseAnalytics {
 }
 
 export async function getCourseAnalytics(courseId: string): Promise<CourseAnalytics> {
-  const res = await fetch(`${API_URL}/api/courses/${courseId}/analytics`);
+  const token = await getAccessToken();
+  const res = await fetch(`${API_URL}/api/courses/${courseId}/analytics`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!res.ok) throw new Error("Failed to fetch course analytics");
   return res.json();
+}
+
+export async function signupInstructor(
+  email: string,
+  password: string,
+  full_name: string
+): Promise<void> {
+  const res = await fetch(`${API_URL}/auth/signup-instructor`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: email.trim().toLowerCase(),
+      password,
+      full_name: full_name.trim(),
+    }),
+  });
+  if (!res.ok) throw new Error(await parseApiError(res));
+}
+
+export async function signupStudent(
+  email: string,
+  password: string,
+  full_name: string,
+  join_code: string
+): Promise<{ course_id?: string }> {
+  const res = await fetch(`${API_URL}/auth/signup-student`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: email.trim().toLowerCase(),
+      password,
+      full_name: full_name.trim(),
+      join_code: join_code.trim().toUpperCase(),
+    }),
+  });
+  if (!res.ok) throw new Error(await parseApiError(res));
+  return (await res.json()) as { course_id?: string };
+}
+
+export async function loginWithBackend(email: string, password: string): Promise<void> {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+  });
+  if (!res.ok) throw new Error(await parseApiError(res));
+  const data = (await res.json()) as {
+    access_token: string;
+    refresh_token: string;
+  };
+  const supabase = createClient();
+  const { error } = await supabase.auth.setSession({
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+  });
+  if (error) throw error;
 }

@@ -8,14 +8,20 @@ from uuid import UUID
 
 class CourseCreate(BaseModel):
     name: str
-    class_code: str
+    description: str | None = None
 
 
 class Course(BaseModel):
     id: UUID
     name: str
-    class_code: str
+    description: str
+    join_code: str
+    instructor_id: UUID
     created_at: datetime
+
+
+class JoinCodeValidateResponse(BaseModel):
+    name: str
 
 
 # === Guardrails Models ===

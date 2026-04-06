@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ChatWindow } from "@/components/ChatWindow";
 import { SourcesPanel } from "@/components/SourcesPanel";
 import { getCourse, createSession, getSessionMessages, sendMessage, Course, ChatMessage, ChatResponse } from "@/lib/api";
-import { getStoredDeviceId, getStoredRole, getStoredUserId } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Loader2, FileQuestion, Layers, Headphones, BarChart3, Presentation, Video, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,7 @@ import Link from "next/link";
 export default function StudentChatPage() {
   const params = useParams();
   const router = useRouter();
-  const courseId = params.courseId as string;
+  const courseId = params.id as string;
   
   const [course, setCourse] = useState<Course | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -44,28 +44,23 @@ export default function StudentChatPage() {
   };
 
   useEffect(() => {
-    const role = getStoredRole();
-    const userId = getStoredUserId();
-    
-    if (!role || !userId) {
-      router.push("/");
-      return;
-    }
-    
-    if (role !== "student") {
-      router.push("/teacher");
-      return;
-    }
-    
     async function init() {
       try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          router.push(`/join?next=/course/${courseId}`);
+          return;
+        }
+
         const courseData = await getCourse(courseId);
         setCourse(courseData);
-        
-        const deviceId = getStoredDeviceId();
-        const session = await createSession(courseId, deviceId);
+
+        const session = await createSession(courseId, user.id);
         setSessionId(session.id);
-        
+
         const existingMessages = await getSessionMessages(session.id);
         setMessages(existingMessages);
       } catch (err) {
@@ -75,7 +70,7 @@ export default function StudentChatPage() {
         setIsLoading(false);
       }
     }
-    
+
     init();
   }, [courseId, router]);
 
@@ -139,9 +134,9 @@ export default function StudentChatPage() {
         <div className="text-center space-y-4">
           <p className="text-red-600">{error}</p>
           <Button asChild variant="outline">
-            <Link href="/student">
+            <Link href="/">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Classes
+              Back home
             </Link>
           </Button>
         </div>
@@ -156,7 +151,7 @@ export default function StudentChatPage() {
         <div className="px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild className="shrink-0">
-              <Link href="/student">
+              <Link href="/">
                 <ArrowLeft className="w-4 h-4" />
               </Link>
             </Button>
@@ -166,7 +161,7 @@ export default function StudentChatPage() {
               </div>
               <div>
                 <h1 className="font-medium text-sm leading-none text-tai-blue">{course?.name}</h1>
-                <p className="text-xs text-ink/35 font-mono mt-0.5">{course?.class_code}</p>
+                <p className="text-xs text-ink/35 font-mono mt-0.5">{course?.join_code}</p>
               </div>
             </div>
           </div>

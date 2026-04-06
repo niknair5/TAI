@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from uuid import UUID
 from app.db import get_supabase
+from app.deps import get_current_profile
 from app.models import (
     ChatRequest, ChatResponse, ChatMessage, Guardrails, HintState,
     HintControllerInput, HintControllerOutput, Excerpt, Source
@@ -22,19 +23,26 @@ I can only help with questions that relate to the uploaded course materials."""
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(
+    request: ChatRequest,
+    profile: dict = Depends(get_current_profile),
+):
     """Process a chat message through the hint controller and student assistant."""
+    if profile["role"] != "student":
+        raise HTTPException(status_code=403, detail="Only students can use chat")
     supabase = get_supabase()
-    
+
     # Get session info
     session = supabase.table("chat_sessions").select("*").eq(
         "id", str(request.session_id)
     ).execute()
-    
+
     if not session.data:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session_data = session.data[0]
+    if session_data["student_id"] != str(profile["id"]):
+        raise HTTPException(status_code=403, detail="Not your session")
     course_id = session_data["course_id"]
     
     # Get guardrails

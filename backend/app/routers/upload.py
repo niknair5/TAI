@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from uuid import UUID
 import io
 from app.db import get_supabase
+from app.deps import get_current_profile
 from app.models import UploadResponse
 from app.services.chunking import extract_text, chunk_text
 from app.services.embeddings import embed_texts
@@ -12,15 +13,19 @@ router = APIRouter()
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file(
     file: UploadFile = File(...),
-    course_id: str = Form(...)
+    course_id: str = Form(...),
+    profile: dict = Depends(get_current_profile),
 ):
     """Upload a file, extract text, chunk it, embed chunks, and store in database."""
+    if profile["role"] != "instructor":
+        raise HTTPException(status_code=403, detail="Only instructors can upload files")
     supabase = get_supabase()
-    
-    # Validate course exists
-    course = supabase.table("courses").select("id").eq("id", course_id).execute()
+
+    course = supabase.table("courses").select("id, instructor_id").eq("id", course_id).execute()
     if not course.data:
         raise HTTPException(status_code=404, detail="Course not found")
+    if str(course.data[0]["instructor_id"]) != str(profile["id"]):
+        raise HTTPException(status_code=403, detail="Only the course instructor can upload")
     
     # Read file content
     content = await file.read()

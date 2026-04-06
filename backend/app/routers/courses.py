@@ -1,129 +1,231 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from uuid import UUID
 from collections import Counter, defaultdict
 from datetime import datetime
 from app.db import get_supabase
-from app.models import Course, CourseCreate, Guardrails, GuardrailsUpdate, Session, SessionCreate, ChatMessage
+from app.deps import get_current_profile
+from app.auth_utils import generate_join_code, is_valid_join_code_format, normalize_join_code
+from app.models import (
+    Course,
+    CourseCreate,
+    Guardrails,
+    GuardrailsUpdate,
+    JoinCodeValidateResponse,
+    Session,
+    SessionCreate,
+    ChatMessage,
+)
 
 router = APIRouter()
 
 
-@router.post("/courses", response_model=Course)
-async def create_course(data: CourseCreate):
-    """Create a new course with default guardrails."""
-    supabase = get_supabase()
-    
-    # Check if class code already exists
-    existing = supabase.table("courses").select("id").eq("class_code", data.class_code.upper()).execute()
-    if existing.data:
-        raise HTTPException(status_code=400, detail="Class code already exists")
-    
-    # Create course
-    result = supabase.table("courses").insert({
-        "name": data.name,
-        "class_code": data.class_code.upper()
-    }).execute()
-    
+def _course_row(supabase, course_id: str) -> dict:
+    result = supabase.table("courses").select("*").eq("id", course_id).execute()
     if not result.data:
-        raise HTTPException(status_code=500, detail="Failed to create course")
-    
-    course = result.data[0]
-    
-    # Create default guardrails
-    supabase.table("guardrails").insert({
-        "course_id": course["id"],
-        "config": Guardrails().model_dump()
-    }).execute()
-    
+        raise HTTPException(status_code=404, detail="Course not found")
+    return result.data[0]
+
+
+def _ensure_course_access(supabase, profile: dict, course: dict) -> None:
+    uid = str(profile["id"])
+    if str(course.get("instructor_id")) == uid:
+        return
+    if profile["role"] == "student":
+        enr = (
+            supabase.table("enrollments")
+            .select("id")
+            .eq("course_id", course["id"])
+            .eq("student_id", uid)
+            .execute()
+        )
+        if enr.data:
+            return
+    raise HTTPException(status_code=403, detail="Access denied")
+
+
+def _ensure_instructor(supabase, profile: dict, course: dict) -> None:
+    uid = str(profile["id"])
+    if str(course.get("instructor_id")) != uid:
+        raise HTTPException(status_code=403, detail="Only the course instructor can do this")
+
+
+@router.get("/courses/validate-join-code/{code}", response_model=JoinCodeValidateResponse)
+async def validate_join_code(code: str):
+    """Public: return course name if join code is valid."""
+    normalized = normalize_join_code(code)
+    if not is_valid_join_code_format(normalized):
+        raise HTTPException(status_code=404, detail="Invalid join code")
+    supabase = get_supabase()
+    result = (
+        supabase.table("courses")
+        .select("name")
+        .eq("join_code", normalized)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Invalid join code")
+    return JoinCodeValidateResponse(name=result.data[0]["name"])
+
+
+@router.post("/courses", response_model=Course)
+async def create_course(
+    data: CourseCreate,
+    profile: dict = Depends(get_current_profile),
+):
+    """Create a new course with auto-generated join_code (instructor only)."""
+    if profile["role"] != "instructor":
+        raise HTTPException(status_code=403, detail="Only instructors can create courses")
+    supabase = get_supabase()
+    desc = (data.description or "").strip()
+    course = None
+    for _ in range(64):
+        jc = generate_join_code()
+        existing = supabase.table("courses").select("id").eq("join_code", jc).execute()
+        if existing.data:
+            continue
+        result = (
+            supabase.table("courses")
+            .insert(
+                {
+                    "name": data.name.strip(),
+                    "description": desc,
+                    "instructor_id": str(profile["id"]),
+                    "join_code": jc,
+                }
+            )
+            .execute()
+        )
+        if result.data:
+            course = result.data[0]
+            break
+    if not course:
+        raise HTTPException(status_code=500, detail="Could not allocate a unique join code")
+
+    supabase.table("guardrails").insert(
+        {"course_id": course["id"], "config": Guardrails().model_dump()}
+    ).execute()
+
     return course
 
 
 @router.get("/courses/{course_id}", response_model=Course)
-async def get_course(course_id: UUID):
-    """Get a course by ID."""
+async def get_course(
+    course_id: UUID,
+    profile: dict = Depends(get_current_profile),
+):
+    """Get a course by ID (must be instructor of the course or enrolled student)."""
     supabase = get_supabase()
-    result = supabase.table("courses").select("*").eq("id", str(course_id)).execute()
-    
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Course not found")
-    
-    return result.data[0]
-
-
-@router.get("/courses/by-code/{class_code}", response_model=Course)
-async def get_course_by_code(class_code: str):
-    """Get a course by class code."""
-    supabase = get_supabase()
-    result = supabase.table("courses").select("*").eq("class_code", class_code.upper()).execute()
-    
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Course not found")
-    
-    return result.data[0]
+    course = _course_row(supabase, str(course_id))
+    _ensure_course_access(supabase, profile, course)
+    return course
 
 
 @router.get("/courses/{course_id}/guardrails", response_model=Guardrails)
-async def get_guardrails(course_id: UUID):
+async def get_guardrails(
+    course_id: UUID,
+    profile: dict = Depends(get_current_profile),
+):
     """Get guardrails for a course."""
     supabase = get_supabase()
-    result = supabase.table("guardrails").select("config").eq("course_id", str(course_id)).execute()
-    
+    course = _course_row(supabase, str(course_id))
+    _ensure_course_access(supabase, profile, course)
+    result = (
+        supabase.table("guardrails")
+        .select("config")
+        .eq("course_id", str(course_id))
+        .execute()
+    )
     if not result.data:
-        # Return defaults if not found
         return Guardrails()
-    
     return Guardrails(**result.data[0]["config"])
 
 
 @router.put("/courses/{course_id}/guardrails", response_model=Guardrails)
-async def update_guardrails(course_id: UUID, data: GuardrailsUpdate):
+async def update_guardrails(
+    course_id: UUID,
+    data: GuardrailsUpdate,
+    profile: dict = Depends(get_current_profile),
+):
     """Update guardrails for a course."""
     supabase = get_supabase()
-    
-    # Get current guardrails
-    current = await get_guardrails(course_id)
-    
-    # Merge updates
+    course = _course_row(supabase, str(course_id))
+    _ensure_instructor(supabase, profile, course)
+
+    result = (
+        supabase.table("guardrails")
+        .select("config")
+        .eq("course_id", str(course_id))
+        .execute()
+    )
+    if result.data:
+        current = Guardrails(**result.data[0]["config"])
+    else:
+        current = Guardrails()
+
     updated = current.model_dump()
     for key, value in data.model_dump(exclude_unset=True).items():
         if value is not None:
             updated[key] = value
-    
-    # Upsert guardrails
-    supabase.table("guardrails").upsert({
-        "course_id": str(course_id),
-        "config": updated
-    }).execute()
-    
+
+    supabase.table("guardrails").upsert(
+        {"course_id": str(course_id), "config": updated}
+    ).execute()
+
     return Guardrails(**updated)
 
 
 @router.post("/sessions", response_model=Session)
-async def create_session(data: SessionCreate):
-    """Create a new chat session."""
+async def create_session(
+    data: SessionCreate,
+    profile: dict = Depends(get_current_profile),
+):
+    """Create a new chat session (enrolled students only)."""
+    if profile["role"] != "student":
+        raise HTTPException(status_code=403, detail="Only students can start chat sessions")
+    uid = str(profile["id"])
+    if data.student_id != uid:
+        raise HTTPException(status_code=403, detail="Student ID does not match authenticated user")
     supabase = get_supabase()
-    
-    result = supabase.table("chat_sessions").insert({
-        "course_id": str(data.course_id),
-        "student_id": data.student_id
-    }).execute()
-    
+    course = _course_row(supabase, str(data.course_id))
+    _ensure_course_access(supabase, profile, course)
+
+    result = (
+        supabase.table("chat_sessions")
+        .insert({"course_id": str(data.course_id), "student_id": data.student_id})
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=500, detail="Failed to create session")
-    
     return result.data[0]
 
 
 @router.get("/sessions/{session_id}/messages", response_model=list[ChatMessage])
-async def get_session_messages(session_id: UUID):
+async def get_session_messages(
+    session_id: UUID,
+    profile: dict = Depends(get_current_profile),
+):
     """Get all messages in a session."""
     supabase = get_supabase()
-    
-    result = supabase.table("chat_messages").select("*").eq(
-        "session_id", str(session_id)
-    ).order("created_at").execute()
-    
+    sess = (
+        supabase.table("chat_sessions")
+        .select("*")
+        .eq("id", str(session_id))
+        .execute()
+    )
+    if not sess.data:
+        raise HTTPException(status_code=404, detail="Session not found")
+    session_row = sess.data[0]
+    course = _course_row(supabase, session_row["course_id"])
+    _ensure_course_access(supabase, profile, course)
+
+    result = (
+        supabase.table("chat_messages")
+        .select("*")
+        .eq("session_id", str(session_id))
+        .order("created_at")
+        .execute()
+    )
     return result.data or []
 
 
@@ -141,22 +243,36 @@ class CourseFile(BaseModel):
 
 
 @router.get("/courses/{course_id}/files", response_model=list[CourseFile])
-async def get_course_files(course_id: UUID):
+async def get_course_files(
+    course_id: UUID,
+    profile: dict = Depends(get_current_profile),
+):
     """Get all files uploaded to a course."""
     supabase = get_supabase()
-    
-    result = supabase.table("course_files").select("*").eq(
-        "course_id", str(course_id)
-    ).order("created_at", desc=True).execute()
-    
+    course = _course_row(supabase, str(course_id))
+    _ensure_course_access(supabase, profile, course)
+
+    result = (
+        supabase.table("course_files")
+        .select("*")
+        .eq("course_id", str(course_id))
+        .order("created_at", desc=True)
+        .execute()
+    )
     return result.data or []
 
 
 @router.delete("/courses/{course_id}/files/{file_id}")
-async def delete_course_file(course_id: UUID, file_id: UUID):
+async def delete_course_file(
+    course_id: UUID,
+    file_id: UUID,
+    profile: dict = Depends(get_current_profile),
+):
     """Delete a file and its chunks from a course."""
     supabase = get_supabase()
-    
+    course = _course_row(supabase, str(course_id))
+    _ensure_instructor(supabase, profile, course)
+
     # Get file info
     file_result = supabase.table("course_files").select("*").eq(
         "id", str(file_id)
@@ -204,9 +320,14 @@ class CourseActivity(BaseModel):
 
 
 @router.get("/courses/{course_id}/activity", response_model=CourseActivity)
-async def get_course_activity(course_id: UUID):
+async def get_course_activity(
+    course_id: UUID,
+    profile: dict = Depends(get_current_profile),
+):
     """Get student activity logs for a course."""
     supabase = get_supabase()
+    course = _course_row(supabase, str(course_id))
+    _ensure_instructor(supabase, profile, course)
     
     # Get all sessions for this course
     sessions = supabase.table("chat_sessions").select("*").eq(
@@ -400,9 +521,14 @@ DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
 @router.get("/courses/{course_id}/analytics", response_model=CourseAnalytics)
-async def get_course_analytics(course_id: UUID):
+async def get_course_analytics(
+    course_id: UUID,
+    profile: dict = Depends(get_current_profile),
+):
     """Comprehensive analytics dashboard data for a course."""
     supabase = get_supabase()
+    course = _course_row(supabase, str(course_id))
+    _ensure_instructor(supabase, profile, course)
 
     # ── Fetch raw data ──────────────────────────────────
     sessions_result = supabase.table("chat_sessions").select("*").eq(
@@ -681,10 +807,10 @@ async def get_course_analytics(course_id: UUID):
     )
 
     # ── 6. Cohorts ─────────────────────────────────────
-    enrolled_result = supabase.table("user_courses").select("user_id").eq(
+    enrolled_result = supabase.table("enrollments").select("student_id").eq(
         "course_id", str(course_id)
-    ).eq("role", "student").execute()
-    enrolled_user_ids = set(r["user_id"] for r in (enrolled_result.data or []))
+    ).execute()
+    enrolled_user_ids = set(str(r["student_id"]) for r in (enrolled_result.data or []))
     total_enrolled = len(enrolled_user_ids)
 
     # Count sessions per student

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,6 @@ import {
   Copy, Check, AlertTriangle, HelpCircle, Clock, Users, TrendingUp,
   BookOpen, MessageSquare, Flame,
 } from "lucide-react";
-import { getStoredRole, getStoredUserId } from "@/lib/utils";
 import {
   getCourse, getCourseFiles, deleteCourseFile, uploadFile,
   getGuardrails, updateGuardrails, getCourseAnalytics,
@@ -192,7 +191,6 @@ function HorizontalBar({ label, value, max, color = BLUE }: {
 
 export default function TeacherDashboardPage() {
   const params = useParams();
-  const router = useRouter();
   const courseId = params.courseId as string;
   const { toast } = useToast();
 
@@ -257,14 +255,8 @@ export default function TeacherDashboardPage() {
   }, [courseId, analytics, toast]);
 
   useEffect(() => {
-    const role = getStoredRole();
-    const userId = getStoredUserId();
-
-    if (!role || !userId) { router.push("/"); return; }
-    if (role !== "teacher") { router.push("/student"); return; }
-
     loadData();
-  }, [loadData, router]);
+  }, [loadData]);
 
   // Trigger analytics load when tab switches
   useEffect(() => {
@@ -318,9 +310,9 @@ export default function TeacherDashboardPage() {
     }
   };
 
-  const copyClassCode = () => {
+  const copyJoinCode = () => {
     if (course) {
-      navigator.clipboard.writeText(course.class_code);
+      navigator.clipboard.writeText(course.join_code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -345,7 +337,7 @@ export default function TeacherDashboardPage() {
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild className="shrink-0">
-              <Link href="/teacher"><ArrowLeft className="w-4 h-4" /></Link>
+              <Link href="/dashboard"><ArrowLeft className="w-4 h-4" /></Link>
             </Button>
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-tai-blue flex items-center justify-center">
@@ -353,9 +345,9 @@ export default function TeacherDashboardPage() {
               </div>
               <div>
                 <h1 className="font-medium text-sm leading-none text-tai-blue">{course?.name}</h1>
-                <button type="button" onClick={copyClassCode} aria-label="Copy class code"
+                <button type="button" onClick={copyJoinCode} aria-label="Copy join code"
                   className="text-xs text-ink/35 font-mono hover:text-tai-blue flex items-center gap-1 mt-0.5 transition-colors">
-                  {course?.class_code}
+                  {course?.join_code}
                   {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
                 </button>
               </div>
