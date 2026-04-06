@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
-import { API_URL, isEduEmail, loginWithBackend, getMyCourses } from "@/lib/api";
+import { API_URL, isEduEmail, loginWithBackend } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
 
 export default function StudentLoginPage() {
@@ -39,12 +39,7 @@ export default function StudentLoginPage() {
         await supabase.auth.signOut();
         throw new Error("This account is not a student account. Use instructor sign in.");
       }
-      const courses = await getMyCourses();
-      if (courses.length === 1) {
-        router.push(`/course/${courses[0].id}`);
-      } else {
-        router.push("/");
-      }
+      router.push("/");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");

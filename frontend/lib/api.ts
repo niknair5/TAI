@@ -138,6 +138,17 @@ export async function getMyCourses(): Promise<Course[]> {
   return res.json();
 }
 
+export async function joinCourse(joinCode: string): Promise<Course> {
+  const token = await getAccessToken();
+  const res = await fetch(`${API_URL}/api/me/enroll`, {
+    method: "POST",
+    headers: authJsonHeaders(token),
+    body: JSON.stringify({ join_code: joinCode.trim().toUpperCase() }),
+  });
+  if (!res.ok) throw new Error(await parseApiError(res));
+  return res.json();
+}
+
 export async function createSession(courseId: string, studentId: string): Promise<ChatSession> {
   const token = await getAccessToken();
   const res = await fetch(`${API_URL}/api/sessions`, {

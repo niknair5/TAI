@@ -6,7 +6,7 @@ import { ChatWindow } from "@/components/ChatWindow";
 import { SourcesPanel } from "@/components/SourcesPanel";
 import { getCourse, createSession, getSessionMessages, sendMessage, Course, ChatMessage, ChatResponse } from "@/lib/api";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, Loader2, FileQuestion, Layers, Headphones, BarChart3, Presentation, Video, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, LogOut, Loader2, FileQuestion, Layers, Headphones, BarChart3, Presentation, Video, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -35,6 +35,13 @@ export default function StudentChatPage() {
     { label: "Slide Deck", icon: Presentation, description: "Create slide presentations" },
     { label: "Video", icon: Video, description: "Generate video content" },
   ];
+
+  const handleSignOut = useCallback(async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }, [router]);
 
   const handleFeatureClick = (label: string) => {
     toast({
@@ -165,10 +172,14 @@ export default function StudentChatPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="text-xs text-ink/40">
               Hint Level: <span className="font-mono text-tai-blue font-bold">{currentHintLevel}/3</span>
             </span>
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-ink/40 hover:text-red-600 gap-1.5">
+              <LogOut className="w-3.5 h-3.5" />
+              Sign out
+            </Button>
           </div>
         </div>
       </header>
